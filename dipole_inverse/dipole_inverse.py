@@ -179,7 +179,7 @@ class Dipole(object):
         new_domain = self.QDM_domain[0, 1] \
             + (self.Ny - 1) * self.QDM_spacing
         if abs(new_domain - self.QDM_domain[1, 1]) > tol:
-            print(f'QDM_domain[1, 0] has been reset from '
+            print(f'QDM_domain[1, 1] has been reset from '
                   f'{self.QDM_domain[1, 1]} to {new_domain}.')
             self.QDM_domain[1, 1] = new_domain
 
