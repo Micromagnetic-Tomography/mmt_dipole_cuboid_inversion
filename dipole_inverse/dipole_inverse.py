@@ -549,4 +549,5 @@ class Dipole(object):
         """
 
         Forward_field = np.matmul(self.Forward_G, self.Mag)
-        np.savetxt(Forwardfile, Forward_field.reshape(self.Ny, self.Nx))
+        np.savetxt(Forwardfile, Forward_field.reshape(self.Ny, self.Nx)
+                   / self.QDM_area)
