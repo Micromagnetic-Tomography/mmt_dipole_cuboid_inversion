@@ -543,3 +543,10 @@ class Dipole(object):
 #             cbar = plt.colorbar(diffplot)
 #             cbar.set_label('B (T)')
             plt.savefig(self.path_to_plot / "Magnetization.png")
+
+    def forward_field(self, Forwardfile):
+        """ Calculates forward field and saves it in Forwardfile
+        """
+
+        Forward_field = np.matmul(self.Forward_G, self.Mag)
+        np.savetxt(Forwardfile, Forward_field.reshape(self.Ny, self.Nx))
