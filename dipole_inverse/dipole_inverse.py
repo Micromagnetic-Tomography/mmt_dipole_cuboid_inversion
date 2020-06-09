@@ -544,10 +544,31 @@ class Dipole(object):
 #             cbar.set_label('B (T)')
             plt.savefig(self.path_to_plot / "Magnetization.png")
 
-    def forward_field(self, Forwardfile):
-        """ Calculates forward field and saves it in Forwardfile
+    def forward_field(self, Forwardfile, snrfile=None, tol=0.9):
+        """ Calculates forward field and signal to noise ratio and saves it
+        tol stands for percentage of signal used (0.9 is 90% default)
+        if snrfile is None, no signal to noise ratio is calculated
         """
 
         Forward_field = np.matmul(self.Forward_G, self.Mag)
         np.savetxt(Forwardfile, Forward_field.reshape(self.Ny, self.Nx)
                    / self.QDM_area)
+        if snrfile is not None:
+            org_field = self.QDM_matrix.flatten()
+            residual = org_field - Forward_field
+            snr = np.zeros(self.Forward_G.shape[1])
+            el_signal = np.zeros((self.Forward_G.shape[0], 2))
+            for column in range(self.Forward_G.shape[1]):
+                el_signal[:, 0] = self.Forward_G[:, column] * self.Mag[column]
+                el_signal[:, 1] = residual * self.QDM_area
+                el_sum = np.sum(abs(el_signal[:, 0]))
+                el_signal = el_signal[np.argsort(abs(el_signal[:, 0]))]
+                res_sum = 0
+                forw_sum = 0
+                for item in range(1, len(el_signal[:, 0])+1):
+                    res_sum += abs(el_signal[-item, 1])
+                    forw_sum += abs(el_signal[-item, 0])
+                    if forw_sum / el_sum > tol:
+                        snr[column] = forw_sum / res_sum
+                        break
+            np.savetxt(snrfile, snr)
