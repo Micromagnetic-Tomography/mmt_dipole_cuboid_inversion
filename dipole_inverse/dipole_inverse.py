@@ -550,17 +550,17 @@ class Dipole(object):
         if snrfile is None, no signal to noise ratio is calculated
         """
 
-        Forward_field = np.matmul(self.Forward_G, self.Mag)
+        Forward_field = np.matmul(self.Forward_G, self.Mag)  # flux field
         np.savetxt(Forwardfile, Forward_field.reshape(self.Ny, self.Nx)
                    / self.QDM_area)
         if snrfile is not None:
-            org_field = self.QDM_matrix.flatten()
+            org_field = self.QDM_matrix.flatten()  # flux field
             residual = org_field - Forward_field
             snr = np.zeros(self.Forward_G.shape[1])
             el_signal = np.zeros((self.Forward_G.shape[0], 2))
             for column in range(self.Forward_G.shape[1]):
                 el_signal[:, 0] = self.Forward_G[:, column] * self.Mag[column]
-                el_signal[:, 1] = residual * self.QDM_area
+                el_signal[:, 1] = residual
                 el_sum = np.sum(abs(el_signal[:, 0]))
                 el_signal = el_signal[np.argsort(abs(el_signal[:, 0]))]
                 res_sum = 0
