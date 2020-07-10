@@ -480,8 +480,8 @@ class Dipole(object):
                                cmap = colormap,
                                extent = (self.QDM_domain[0, 0],
                                          self.QDM_domain[1, 0],
-                                         self.QDM_domain[0, 1],
-                                         self.QDM_domain[1, 1]))
+                                         self.QDM_domain[1, 1],
+                                         self.QDM_domain[0, 1]))
             ax = self.plot_contour(ax)
             ax.set_title('Measured field with grains')
             ax.set_xlim(self.QDM_domain[0, 0], self.QDM_domain[1, 0])
@@ -498,8 +498,8 @@ class Dipole(object):
             Bzforwplot = ax.imshow(Forward_field, cmap = colormap,
                                    extent = (self.QDM_domain[0, 0],
                                              self.QDM_domain[1, 0],
-                                             self.QDM_domain[0, 1],
-                                             self.QDM_domain[1, 1]))
+                                             self.QDM_domain[1, 1],
+                                             self.QDM_domain[0, 1]))
             ax = self.plot_contour(ax)
             ax.set_title('Forward field with grains')
             ax.set_xlim(self.QDM_domain[0, 0], self.QDM_domain[1, 0])
@@ -515,8 +515,8 @@ class Dipole(object):
                 cmap = colormap, extent =
                 (self.QDM_domain[0, 0],
                  self.QDM_domain[1, 0],
-                 self.QDM_domain[0, 1],
-                 self.QDM_domain[1, 1]))
+                 self.QDM_domain[1, 1],
+                 self.QDM_domain[0, 1]))
             ax = self.plot_contour(ax)
             ax.set_title('Residual field with grains')
             ax.set_xlim(self.QDM_domain[0, 0], self.QDM_domain[1, 0])
@@ -534,8 +534,8 @@ class Dipole(object):
                 cmap = 'viridis', extent =
                 (self.QDM_domain[0, 0],
                  self.QDM_domain[1, 0],
-                 self.QDM_domain[0, 1],
-                 self.QDM_domain[1, 1]))
+                 self.QDM_domain[1, 1],
+                 self.QDM_domain[0, 1]))
             ax, ax2 = self.plot_magnetization(ax, ax2)
             ax.set_title('Residual field with magnetization grains')
             ax.set_xlim(self.QDM_domain[0, 0], self.QDM_domain[1, 0])
@@ -547,6 +547,7 @@ class Dipole(object):
     def forward_field(self, Forwardfile, snrfile=None, tol=0.9):
         """ Calculates forward field and signal to noise ratio and saves it
         tol stands for percentage of signal used (0.9 is 90% default)
+        2nd norm is taken
         if snrfile is None, no signal to noise ratio is calculated
         """
 
@@ -561,14 +562,18 @@ class Dipole(object):
             for column in range(self.Forward_G.shape[1]):
                 el_signal[:, 0] = self.Forward_G[:, column] * self.Mag[column]
                 el_signal[:, 1] = residual
-                el_sum = np.sum(abs(el_signal[:, 0]))
+                el_sum = np.sqrt(np.sum((el_signal[:, 0])**2))
                 el_signal = el_signal[np.argsort(abs(el_signal[:, 0]))]
-                res_sum = 0
-                forw_sum = 0
+                res2_sum = 0
+                forw2_sum = 0
+#                 forw_sum = 0
                 for item in range(1, len(el_signal[:, 0])+1):
-                    res_sum += abs(el_signal[-item, 1])
-                    forw_sum += abs(el_signal[-item, 0])
-                    if forw_sum / el_sum > tol:
-                        snr[column] = forw_sum / res_sum
+                    res2_sum += el_signal[-item, 1]**2
+                    forw2_sum += el_signal[-item, 0]**2
+#                     forw_sum += abs(el_signal[-item, 0])
+                    if np.sqrt(forw2_sum) / el_sum > tol:
+                        res2_sum = np.sqrt(res2_sum)
+                        forw2_sum = np.sqrt(forw2_sum)
+                        snr[column] = forw2_sum / res2_sum
                         break
             np.savetxt(snrfile, snr)
