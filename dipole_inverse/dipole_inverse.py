@@ -252,7 +252,7 @@ class Dipole(object):
 
     def obtain_magnetization(self):
         """ Groups functions together needed for
-            magnetizatiob
+            magnetization
         """
 
         self.read_files()
