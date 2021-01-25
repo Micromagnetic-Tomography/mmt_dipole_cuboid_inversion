@@ -13,7 +13,7 @@ from shapely.ops import cascaded_union
 @nb.jit(nopython=True)
 def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
                     Ny, Nx, QDM_spacing, QDM_deltax, QDM_deltay,
-                    Origin):
+                    Origin, verbose=True):
     """ Modified version of David's function
     Main loop to populate the G matrix
     The outer while loop will last until reaching the total number
@@ -54,9 +54,11 @@ def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
     # print('G matrix', G.shape)
 
     while i_cuboid < len(cuboids):
-        # print(f'Particle = {i_particle}  Cuboid = {i_cuboid}')
-        print(f'Particle =', i_particle,  'Cuboid =', i_cuboid)
-        # print(particle =)
+        if verbose:
+            # print(f'Particle = {i_particle}  Cuboid = {i_cuboid}')
+            print(f'Particle =', i_particle,  'Cuboid =', i_cuboid)
+            # print(particle =)
+        
         i_cuboid_old = i_cuboid
 
         # Loop over sensor measurements. Each sensor is in the xy
@@ -199,7 +201,7 @@ class Dipole(object):
         self.Ncub = len(self.cuboids[:, 6])
 
     
-    def prepare_matrix(self, Origin=True):
+    def prepare_matrix(self, Origin=True, verbose=True):
         """ prepares for populate_matrix
         """
 
@@ -208,7 +210,7 @@ class Dipole(object):
             self.Forward_G, self.QDM_domain, self.scan_height,
             self.cuboids, self.Npart, self.Ny, self.Nx,
             self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
-            Origin=True)
+            Origin=True, verbose=verbose)
         
 
     def calculate_inverse(self, method='svd'):
