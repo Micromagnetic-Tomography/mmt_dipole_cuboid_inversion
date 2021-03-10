@@ -5,7 +5,8 @@ import matplotlib as mpl
 from pathlib import Path
 from scipy.linalg.lapack import dgetrs
 from scipy.linalg.lapack import dgetrf
-from scipy.linalg import pinv
+# The pinv2 uses the SVD approach (much more efficient than pinv which uses least squares)
+from scipy.linalg import pinv2
 from shapely.geometry import Polygon
 from descartes import PolygonPatch
 from shapely.ops import cascaded_union
@@ -215,7 +216,7 @@ class Dipole(object):
 
     def calculate_inverse(self, method='svd'):
         """ Calculate the inverse and give solution
-        method is either svd using scipy.linalg.pinv or
+        method is either svd using scipy.linalg.pinv2 or
         dgetrf using scipy.linalg.dgetrs and dgetrf
         """
 
@@ -224,7 +225,7 @@ class Dipole(object):
             print(f'Start inversion with {self.Forward_G.shape[0]} '
                   f'knowns and {self.Forward_G.shape[1]} unknowns')
             if method == 'svd':
-                Inverse_G = pinv(self.Forward_G)
+                Inverse_G = pinv2(self.Forward_G)
                 self.Mag = np.matmul(Inverse_G, QDM_flatten)
                 print("Inversion has been carried out")
 
