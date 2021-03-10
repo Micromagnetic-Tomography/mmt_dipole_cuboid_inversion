@@ -6,7 +6,7 @@ from pathlib import Path
 from scipy.linalg.lapack import dgetrs
 from scipy.linalg.lapack import dgetrf
 # The pinv2 uses the SVD approach (much more efficient than pinv which uses least squares)
-from scipy.linalg import pinv2
+import scipy.linalg as spl
 from shapely.geometry import Polygon
 from descartes import PolygonPatch
 from shapely.ops import cascaded_union
@@ -59,7 +59,7 @@ def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
             # print(f'Particle = {i_particle}  Cuboid = {i_cuboid}')
             print(f'Particle =', i_particle,  'Cuboid =', i_cuboid)
             # print(particle =)
-        
+
         i_cuboid_old = i_cuboid
 
         # Loop over sensor measurements. Each sensor is in the xy
@@ -201,7 +201,6 @@ class Dipole(object):
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
 
-    
     def prepare_matrix(self, Origin=True, verbose=True):
         """ prepares for populate_matrix
         """
@@ -212,29 +211,52 @@ class Dipole(object):
             self.cuboids, self.Npart, self.Ny, self.Nx,
             self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
             Origin=True, verbose=verbose)
-        
 
-    def calculate_inverse(self, method='svd'):
-        """ Calculate the inverse and give solution
-        method is either svd using scipy.linalg.pinv2 or
-        dgetrf using scipy.linalg.dgetrs and dgetrf
+    def calculate_inverse(self, method='scipy_pinv', **method_args):
         """
+
+        Calculates the inverse and computes the magnetization.  The solution is
+        generated in the self.Mag variable
+
+        The numerical inversion can be done using the SVD algorithms or the
+        least squares method. The options available are:
+
+            scipy_lapack    :: Uses scipy.lapack wrappers for dgetrs and dgetrf
+            scipy_pinv      :: Least squares method
+            scipy_pinv2     :: SVD method
+            numpy_pinv      :: SVD method
+
+        Additional keyword arguments are passed to the solver, e.g.
+
+            calculate_inverse(method='numpy_pinv', rcond=1e-15)
+
+        """
+        SUCC_MSG = 'Inversion has been carried out'
 
         QDM_flatten = self.QDM_matrix.flatten()
         if self.Forward_G.shape[0] >= self.Forward_G.shape[1]:
             print(f'Start inversion with {self.Forward_G.shape[0]} '
                   f'knowns and {self.Forward_G.shape[1]} unknowns')
-            if method == 'svd':
-                Inverse_G = pinv2(self.Forward_G)
+            # probably there is a more efficient way to write these options
+            if method == 'scipy_pinv':
+                Inverse_G = spl.pinv(self.Forward_G, **method_args)
                 self.Mag = np.matmul(Inverse_G, QDM_flatten)
-                print("Inversion has been carried out")
+                print(SUCC_MSG)
+            elif method == 'scipy_pinv2':
+                Inverse_G = spl.pinv2(self.Forward_G, **method_args)
+                self.Mag = np.matmul(Inverse_G, QDM_flatten)
+                print(SUCC_MSG)
+            elif method == 'numpy_pinv':
+                Inverse_G = np.linalg.pinv(self.Forward_G, **method_args)
+                self.Mag = np.matmul(Inverse_G, QDM_flatten)
+                print(SUCC_MSG)
 
-            elif method == 'dgetrf':
+            elif method == 'scipy_lapack':
                 GtG = np.matmul(self.Forward_G.transpose,
                                 self.Forward_G)
                 GtG_shuffle, IPIV, INFO1 = dgetrf(GtG)
                 if INFO1 == 0:
-                    print('Inversion is carried out!')
+                    print(SUCC_MSG)
                     GtQDM = np.matmul(self.Forward_G, QDM_flatten)
                     self.Mag, INFO2 = dgetrs(GtG_shuffle, IPIV, GtQDM)
                     if INFO2 != 0:
@@ -242,7 +264,7 @@ class Dipole(object):
                         print(f'{INFO2}th argument has an'
                               'illegal value. self.Mag deleted')
                     else:
-                        print("Inversion has been carried out")
+                        print(SUCC_MSG)
                 else:
                     print(f'{INFO1}th argument has an illegal value')
 
@@ -254,7 +276,7 @@ class Dipole(object):
                   f'{self.Forward_G.shape[1]} unknowns')
 
     def obtain_magnetization(self, verbose=True):
-        """ 
+        """
         Groups functions together needed for magnetization
         """
 
@@ -469,10 +491,10 @@ class Dipole(object):
 
     def save_results(self, Magfile, keyfile,
                      path_to_plot=None, colormap='coolwarm'):
-        """ 
+        """
         Saves magnetization to a specified Magfile file and the keys of the index
         of the particles in the keyfile file.
-        
+
         (to be removed)
         An optional plot is produced if path_to_plot (string) is set.
         colormap default set at coolwarm
@@ -480,7 +502,7 @@ class Dipole(object):
 
         # WARNING: the old version did not save the indexes as 1st column:
         # np.savetxt(Magfile, self.Mag.reshape(self.Npart, 3))
-        
+
         # Sort indexes
         _, sort_idx = np.unique(self.cuboids[:, 6], return_index=True)
         p_idxs = self.cuboids[:, 6][np.sort(sort_idx)]
@@ -490,7 +512,7 @@ class Dipole(object):
 
         np.savetxt(Magfile, data)
         np.savetxt(keyfile, p_idxs)
-        
+
         if path_to_plot is not None:
             self.path_to_plot = Path(path_to_plot)
             # Original magnetic field with grains
@@ -508,7 +530,7 @@ class Dipole(object):
             cbar = plt.colorbar(Bzplot)
             cbar.set_label('B (T)')
             plt.savefig(self.path_to_plot / "Original_field.png")
-            
+
             # Forward field with grains
             Forward_field = (np.matmul(
                 self.Forward_G, self.Mag) / self.QDM_area)
