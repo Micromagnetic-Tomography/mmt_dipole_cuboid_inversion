@@ -467,14 +467,30 @@ class Dipole(object):
                 else:
                     return ax
 
-    def save_results(self, Magfile,
+    def save_results(self, Magfile, keyfile,
                      path_to_plot=None, colormap='coolwarm'):
-        """ Saves magnetization to a specified file
-            and makes plots if path_to_plot (string)
-            has been set. colormap default set at coolwarm
+        """ 
+        Saves magnetization to a specified Magfile file and the keys of the index
+        of the particles in the keyfile file.
+        
+        (to be removed)
+        An optional plot is produced if path_to_plot (string) is set.
+        colormap default set at coolwarm
         """
 
-        np.savetxt(Magfile, self.Mag.reshape(self.Npart, 3))
+        # WARNING: the old version did not save the indexes as 1st column:
+        # np.savetxt(Magfile, self.Mag.reshape(self.Npart, 3))
+        
+        # Sort indexes
+        _, sort_idx = np.unique(self.cuboids[:, 6], return_index=True)
+        p_idxs = self.cuboids[:, 6][np.sort(sort_idx)]
+        # Sort the np.unique indexes to get the cuboid idxs in the orig order
+        # Check: https://stackoverflow.com/questions/15637336/numpy-unique-with-order-preserved
+        data = np.column_stack((p_idxs, self.Mag.reshape(self.Npart, 3)))
+
+        np.savetxt(Magfile, data)
+        np.savetxt(keyfile, p_idxs)
+        
         if path_to_plot is not None:
             self.path_to_plot = Path(path_to_plot)
             # Original magnetic field with grains
