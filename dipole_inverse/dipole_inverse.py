@@ -253,13 +253,13 @@ class Dipole(object):
                   f'{self.Forward_G.shape[0]} knowns and '
                   f'{self.Forward_G.shape[1]} unknowns')
 
-    def obtain_magnetization(self):
-        """ Groups functions together needed for
-            magnetization
+    def obtain_magnetization(self, verbose=True):
+        """ 
+        Groups functions together needed for magnetization
         """
 
         self.read_files()
-        self.prepare_matrix()
+        self.prepare_matrix(verbose=verbose)
         self.calculate_inverse()
 
     def plot_contour(self, ax, tol=1e-7):
