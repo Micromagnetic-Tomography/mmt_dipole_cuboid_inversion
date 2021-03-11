@@ -212,7 +212,7 @@ class Dipole(object):
             self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
             Origin=True, verbose=verbose)
 
-    def calculate_inverse(self, method='scipy_pinv', **method_args):
+    def calculate_inverse(self, method='scipy_pinv', **method_kwargs):
         """
 
         Calculates the inverse and computes the magnetization.  The solution is
@@ -239,15 +239,15 @@ class Dipole(object):
                   f'knowns and {self.Forward_G.shape[1]} unknowns')
             # probably there is a more efficient way to write these options
             if method == 'scipy_pinv':
-                Inverse_G = spl.pinv(self.Forward_G, **method_args)
+                Inverse_G = spl.pinv(self.Forward_G, **method_kwargs)
                 self.Mag = np.matmul(Inverse_G, QDM_flatten)
                 print(SUCC_MSG)
             elif method == 'scipy_pinv2':
-                Inverse_G = spl.pinv2(self.Forward_G, **method_args)
+                Inverse_G = spl.pinv2(self.Forward_G, **method_kwargs)
                 self.Mag = np.matmul(Inverse_G, QDM_flatten)
                 print(SUCC_MSG)
             elif method == 'numpy_pinv':
-                Inverse_G = np.linalg.pinv(self.Forward_G, **method_args)
+                Inverse_G = np.linalg.pinv(self.Forward_G, **method_kwargs)
                 self.Mag = np.matmul(Inverse_G, QDM_flatten)
                 print(SUCC_MSG)
 
@@ -275,14 +275,15 @@ class Dipole(object):
                   f'{self.Forward_G.shape[0]} knowns and '
                   f'{self.Forward_G.shape[1]} unknowns')
 
-    def obtain_magnetization(self, verbose=True):
+    def obtain_magnetization(self, verbose=True, 
+                             method='scipy_pinv', **method_kwargs):
         """
         Groups functions together needed for magnetization
         """
 
         self.read_files()
         self.prepare_matrix(verbose=verbose)
-        self.calculate_inverse()
+        self.calculate_inverse(method=method, **method_kwargs)
 
     def plot_contour(self, ax, tol=1e-7):
         """ Plots contour of grains at ax (matplotlib axis)
