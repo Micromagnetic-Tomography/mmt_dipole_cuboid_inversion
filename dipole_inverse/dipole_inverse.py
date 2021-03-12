@@ -5,11 +5,13 @@ import matplotlib as mpl
 from pathlib import Path
 from scipy.linalg.lapack import dgetrs
 from scipy.linalg.lapack import dgetrf
-# The pinv2 uses the SVD approach (much more efficient than pinv which uses least squares)
+# The pinv2 uses the SVD approach (much more efficient than pinv which
+# uses least squares)
 import scipy.linalg as spl
 from shapely.geometry import Polygon
 from descartes import PolygonPatch
 from shapely.ops import cascaded_union
+
 
 @nb.jit(nopython=True)
 def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
@@ -59,7 +61,7 @@ def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
     while i_cuboid < len(cuboids):
         if verbose:
             # print(f'Particle = {i_particle}  Cuboid = {i_cuboid}')
-            print(f'Particle =', i_particle,  'Cuboid =', i_cuboid)
+            print('Particle =', i_particle, 'Cuboid =', i_cuboid)
             # print(particle =)
 
         i_cuboid_old = i_cuboid
@@ -81,7 +83,7 @@ def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
                 # While the cuboid has particle index of the
                 # particle being analysed
                 while i_particle == i_particle_prev:
-#                     print(i_particle, i, j, i_cuboid)
+                    #                     print(i_particle, i, j, i_cuboid)
                     cuboid_center[:] = cuboids[i_cuboid, :3]
                     dr_cuboid[:] = cuboid_center - sensor_pos
                     # Cuboid sizes:
@@ -134,6 +136,7 @@ def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
         i_particle_prev = i_particle
         i_particle_0_N += 1
     return G
+
 
 class Dipole(object):
     """ This class calculates and plots magnetization
@@ -278,7 +281,7 @@ class Dipole(object):
                   f'{self.Forward_G.shape[0]} knowns and '
                   f'{self.Forward_G.shape[1]} unknowns')
 
-    def obtain_magnetization(self, verbose=True, 
+    def obtain_magnetization(self, verbose=True,
                              method='scipy_pinv', **method_kwargs):
         """
         Groups functions together needed for magnetization
@@ -511,7 +514,8 @@ class Dipole(object):
         _, sort_idx = np.unique(self.cuboids[:, 6], return_index=True)
         p_idxs = self.cuboids[:, 6][np.sort(sort_idx)]
         # Sort the np.unique indexes to get the cuboid idxs in the orig order
-        # Check: https://stackoverflow.com/questions/15637336/numpy-unique-with-order-preserved
+        # Check:
+        # https://stackoverflow.com/questions/15637336/numpy-unique-with-order-preserved
         data = np.column_stack((p_idxs, self.Mag.reshape(self.Npart, 3)))
 
         np.savetxt(Magfile, data)
@@ -520,13 +524,13 @@ class Dipole(object):
         if path_to_plot is not None:
             self.path_to_plot = Path(path_to_plot)
             # Original magnetic field with grains
-            fig1, ax = plt.subplots(figsize = (25, 15))
+            fig1, ax = plt.subplots(figsize=(25, 15))
             Bzplot = ax.imshow(self.QDM_matrix / self.QDM_area,
-                               cmap = colormap,
-                               extent = (self.QDM_domain[0, 0],
-                                         self.QDM_domain[1, 0],
-                                         self.QDM_domain[1, 1],
-                                         self.QDM_domain[0, 1]))
+                               cmap=colormap,
+                               extent=(self.QDM_domain[0, 0],
+                                       self.QDM_domain[1, 0],
+                                       self.QDM_domain[1, 1],
+                                       self.QDM_domain[0, 1]))
             ax = self.plot_contour(ax)
             ax.set_title('Measured field with grains')
             ax.set_xlim(self.QDM_domain[0, 0], self.QDM_domain[1, 0])
@@ -539,12 +543,12 @@ class Dipole(object):
             Forward_field = (np.matmul(
                 self.Forward_G, self.Mag) / self.QDM_area)
             Forward_field = Forward_field.reshape(self.Ny, self.Nx)
-            fig2, ax = plt.subplots(figsize = (25, 15))
-            Bzforwplot = ax.imshow(Forward_field, cmap = colormap,
-                                   extent = (self.QDM_domain[0, 0],
-                                             self.QDM_domain[1, 0],
-                                             self.QDM_domain[1, 1],
-                                             self.QDM_domain[0, 1]))
+            fig2, ax = plt.subplots(figsize=(25, 15))
+            Bzforwplot = ax.imshow(Forward_field, cmap=colormap,
+                                   extent=(self.QDM_domain[0, 0],
+                                           self.QDM_domain[1, 0],
+                                           self.QDM_domain[1, 1],
+                                           self.QDM_domain[0, 1]))
             ax = self.plot_contour(ax)
             ax.set_title('Forward field with grains')
             ax.set_xlim(self.QDM_domain[0, 0], self.QDM_domain[1, 0])
@@ -554,14 +558,13 @@ class Dipole(object):
             plt.savefig(self.path_to_plot / "Forward_field.png")
 
             # residual field with grains
-            fig3, ax = plt.subplots(figsize = (25, 15))
+            fig3, ax = plt.subplots(figsize=(25, 15))
             diffplot = ax.imshow(
                 Forward_field - self.QDM_matrix / self.QDM_area,
-                cmap = colormap, extent =
-                (self.QDM_domain[0, 0],
-                 self.QDM_domain[1, 0],
-                 self.QDM_domain[1, 1],
-                 self.QDM_domain[0, 1]))
+                cmap=colormap, extent=(self.QDM_domain[0, 0],
+                                       self.QDM_domain[1, 0],
+                                       self.QDM_domain[1, 1],
+                                       self.QDM_domain[0, 1]))
             ax = self.plot_contour(ax)
             ax.set_title('Residual field with grains')
             ax.set_xlim(self.QDM_domain[0, 0], self.QDM_domain[1, 0])
@@ -571,16 +574,14 @@ class Dipole(object):
             plt.savefig(self.path_to_plot / "Residual_field.png")
 
             # Grain magnetization
-            fig4, (ax, ax2) = plt.subplots(2, 1, figsize = (25, 15),
-                                          gridspec_kw=
-                                          {'height_ratios': [10, 1]})
+            fig4, (ax, ax2) = plt.subplots(2, 1, figsize=(25, 15),
+                                           gridspec_kw={'height_ratios': [10, 1]})
             diffplot = ax.imshow(
                 Forward_field - self.QDM_matrix / self.QDM_area,
-                cmap = 'viridis', extent =
-                (self.QDM_domain[0, 0],
-                 self.QDM_domain[1, 0],
-                 self.QDM_domain[1, 1],
-                 self.QDM_domain[0, 1]))
+                cmap='viridis', extent=(self.QDM_domain[0, 0],
+                                        self.QDM_domain[1, 0],
+                                        self.QDM_domain[1, 1],
+                                        self.QDM_domain[0, 1]))
             ax, ax2 = self.plot_magnetization(ax, ax2)
             ax.set_title('Residual field with magnetization grains')
             ax.set_xlim(self.QDM_domain[0, 0], self.QDM_domain[1, 0])
@@ -612,7 +613,7 @@ class Dipole(object):
                 res2_sum = 0
                 forw2_sum = 0
 #                 forw_sum = 0
-                for item in range(1, len(el_signal[:, 0])+1):
+                for item in range(1, len(el_signal[:, 0]) + 1):
                     res2_sum += el_signal[-item, 1]**2
                     forw2_sum += el_signal[-item, 0]**2
 #                     forw_sum += abs(el_signal[-item, 0])
