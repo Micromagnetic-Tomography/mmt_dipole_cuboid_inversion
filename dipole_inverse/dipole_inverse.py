@@ -53,6 +53,8 @@ def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
 
     # print('max cub =', Npart)
     # print('G matrix', G.shape)
+    # If grains are not numbered in order this always works
+    i_particle_0_N = 0
 
     while i_cuboid < len(cuboids):
         if verbose:
@@ -125,11 +127,12 @@ def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
 
                 # print(i + j * Nx, 3 * i_particle_prev)
                 # Populate G matrix column wise
-                G[i + j * Nx, 3 * (i_particle_prev - 1)] = particle_flux[0]
-                G[i + j * Nx, 3 * (i_particle_prev - 1) + 1] = particle_flux[1]
-                G[i + j * Nx, 3 * (i_particle_prev - 1) + 2] = particle_flux[2]
+                G[i + j * Nx, 3 * i_particle_0_N] = particle_flux[0]
+                G[i + j * Nx, 3 * i_particle_0_N + 1] = particle_flux[1]
+                G[i + j * Nx, 3 * i_particle_0_N + 2] = particle_flux[2]
 
         i_particle_prev = i_particle
+        i_particle_0_N += 1
     return G
 
 class Dipole(object):
