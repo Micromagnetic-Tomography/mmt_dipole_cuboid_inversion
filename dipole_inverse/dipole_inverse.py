@@ -11,26 +11,29 @@ import scipy.linalg as spl
 from shapely.geometry import Polygon
 from descartes import PolygonPatch
 from shapely.ops import cascaded_union
+from typing import Literal  # Working with Python >3.8
 
 
 @nb.jit(nopython=True)
 def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
                     Ny, Nx, QDM_spacing, QDM_deltax, QDM_deltay,
                     Origin, verbose=True):
-    """ Modified version of David's function
-    Main loop to populate the G matrix
-    The outer while loop will last until reaching the total number
-    of cuboids in the sample. Adjacent cuboids belong to a single
-    particle, which is indexed in the 6th element of the
-    cuboids array. The population of the G matrix is
-    performed column wise for every particle. For each cuboid
-    belonging to a particle, their contribution to the magnetic
-    flux is summed up for every sensor measurement in steps of
-    delta in the xy plane, which are given by the loops with the
-    i-j indexes. The flux is stored column wise.
+    """
+    Main function to populate the G matrix
 
-    If Origin is True (default), the cuboids are stored with their
-    original coordinates. If cuboids are shifted, Origin is False.
+    Method ::
+
+    The outer while loop will last until reaching the total number of cuboids
+    in the sample. Adjacent cuboids belong to a single particle, which is
+    indexed in the 6th element of the cuboids array. The population of the G
+    matrix is performed column wise for every particle. For each cuboid
+    belonging to a particle, their contribution to the magnetic flux is summed
+    up for every sensor measurement in steps of delta in the xy plane, which
+    are given by the loops with the i-j indexes. The flux is stored column
+    wise.
+
+    If Origin is True (default), the cuboids are stored with their original
+    coordinates. If cuboids are shifted, Origin is False.
     """
 
     Cm = 1e-7
@@ -139,32 +142,64 @@ def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
 
 
 class Dipole(object):
-    """ This class calculates and plots magnetization
-    """
 
-    def __init__(self, QDM_data, cuboid_data,
-                 QDM_domain, QDM_spacing, QDM_deltax,
-                 QDM_deltay, QDM_area, sample_height,
-                 scan_height, tol=1e-7):
-        """ Initializes class
+    def __init__(self,
+                 QDM_data: str,
+                 cuboid_data: str,
+                 QDM_domain: np.ndarray,
+                 QDM_spacing: float,
+                 QDM_deltax: float,
+                 QDM_deltay: float,
+                 QDM_area: float,
+                 sample_height: float,
+                 scan_height: float,
+                 tol: float = 1e-7):
+        """
+        This class calculates the magnetization of a group of magnetic grains
+        from a surface with magnetic field scan data.
 
-        Arguments:
-        QDM_data (string) -- Matrixfile (Nx columns, Ny rows)
-                    containing QDM data in T
-        cuboid_data (string) -- File (x, y, z, dx, dy, dz, index)
-                       containing location and size grains in microm
-        QDM_domain (2x2 numpy matrix) -- Size (metres) of QDM domain as
-                                         np.array([[x1, y1], [x2, y2]])
-        QDM_spacing (float) -- Distance between two adjacent scanning
-                               points in metres
-        QDM_deltax (float) -- half length of QDM sensor
-        QDM_deltay (float) -- half width of QDM sensor
-        QDM_area (float) -- Area of QDM sensor in square metres
-        sample_height (float) -- Thickness of sample in metres
-        scan_height (float) -- Distance between sample and QDM scanner
-                               in metres
-        tol (float) -- Tolerance for checking QDM_domain.
-                       Default is 1e-7
+        Parameters
+        ----------
+        QDM_data
+            Matrixfile (Nx columns, Ny rows) containing the QDM/scan data in T
+        cuboid_data
+            File (x, y, z, dx, dy, dz, index) containing location and size
+            grains in microm
+        QDM_domain
+            (2x2 numpy matrix) : Size (metres) of the QDM domain as
+             np.array([[x1, y1], [x2, y2]])
+        QDM_spacing
+            Distance between two adjacent scanning points in metres
+        QDM_deltax
+            Half length of QDM sensor
+        QDM_deltay
+            Half width of QDM sensor
+        QDM_area
+            Area of QDM sensor in square metres
+        sample_height
+            Thickness of sample in metres
+        scan_height
+            Distance between sample and QDM scanner in metres
+        tol
+            Tolerance for checking QDM_domain. Default is 1e-7
+
+        Attributes
+        ----------
+        QDM_data
+        cuboid_data
+        QDM_domain
+        QDM_spacing
+        QDM_deltax
+        QDM_deltay
+        QDM_area
+        sample_height
+        scan_height
+        Nx, Ny
+        QDM_domain
+
+        cuboids
+
+
         """
 
         self.QDM_data = Path(QDM_data)
@@ -208,7 +243,7 @@ class Dipole(object):
         self.Ncub = len(self.cuboids[:, 6])
 
     def prepare_matrix(self, Origin=True, verbose=True):
-        """ prepares for populate_matrix
+        """ Prepares for populate_matrix
         """
 
         self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
@@ -218,20 +253,31 @@ class Dipole(object):
             self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
             Origin=True, verbose=verbose)
 
-    def calculate_inverse(self, method='scipy_pinv', **method_kwargs):
-        """
+    _MethodOps = Literal['scipy_lapack',
+                         'scipy_pinv',
+                         'scipy_pinv2'
+                         'numpy_pinv']
 
+    def calculate_inverse(self,
+                          method: _MethodOps = 'scipy_pinv',
+                          **method_kwargs):
+        """
         Calculates the inverse and computes the magnetization.  The solution is
         generated in the self.Mag variable
 
-        The numerical inversion can be done using the SVD algorithms or the
-        least squares method. The options available are:
+        Parameters
+        ----------
+        method
+            The numerical inversion can be done using the SVD algorithms or the
+            least squares method. The options available are:
 
             scipy_lapack    :: Uses scipy.lapack wrappers for dgetrs and dgetrf
             scipy_pinv      :: Least squares method
             scipy_pinv2     :: SVD method
             numpy_pinv      :: SVD method
 
+        Notes
+        -----
         Additional keyword arguments are passed to the solver, e.g.
 
             calculate_inverse(method='numpy_pinv', rcond=1e-15)
@@ -281,10 +327,14 @@ class Dipole(object):
                   f'{self.Forward_G.shape[0]} knowns and '
                   f'{self.Forward_G.shape[1]} unknowns')
 
-    def obtain_magnetization(self, verbose=True,
-                             method='scipy_pinv', **method_kwargs):
+    def obtain_magnetization(self, 
+                             verbose: bool = True,
+                             method: _MethodOps = 'scipy_pinv',
+                             **method_kwargs):
         """
-        Groups functions together needed for magnetization
+        A shortcut method to call three functions to compute the magnetization
+        of the grains. See self.calculate_inverse docstring for details about
+        the method parameter.
         """
 
         self.read_files()
@@ -292,9 +342,14 @@ class Dipole(object):
         self.calculate_inverse(method=method, **method_kwargs)
 
     def plot_contour(self, ax, tol=1e-7):
-        """ Plots contour of grains at ax (matplotlib axis)
-        tolerance is used to enable merging cuboids
-        of one grain. default is 1e-7
+        """ Plots contour of grains at a given matplotlib axis object 
+
+        Parameters
+        ----------
+        ax 
+            Matplotlib axis. 
+        tol
+            Tolerance is used to enable merging cuboids of one grain.
         """
 
         counter = 0
@@ -496,11 +551,14 @@ class Dipole(object):
                 else:
                     return ax
 
-    def save_results(self, Magfile, keyfile,
-                     path_to_plot=None, colormap='coolwarm'):
+    def save_results(self, 
+                     Magfile: str, 
+                     keyfile: str,
+                     path_to_plot: str = None,
+                     colormap: str = 'coolwarm'):
         """
-        Saves magnetization to a specified Magfile file and the keys of the index
-        of the particles in the keyfile file.
+        Saves the magnetization to a specified Magfile file and the keys of the
+        index of the particles in the keyfile file.
 
         (to be removed)
         An optional plot is produced if path_to_plot (string) is set.
