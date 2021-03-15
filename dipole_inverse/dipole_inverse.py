@@ -1,16 +1,7 @@
 import numpy as np
 import numba as nb
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 from pathlib import Path
-from scipy.linalg.lapack import dgetrs
-from scipy.linalg.lapack import dgetrf
-# The pinv2 uses the SVD approach (much more efficient than pinv which
-# uses least squares)
 import scipy.linalg as spl
-from shapely.geometry import Polygon
-from descartes import PolygonPatch
-from shapely.ops import cascaded_union
 from typing import Literal  # Working with Python >3.8
 
 
@@ -21,8 +12,8 @@ def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
     """
     Main function to populate the G matrix
 
-    Method ::
-
+    Notes
+    -----
     The outer while loop will last until reaching the total number of cuboids
     in the sample. Adjacent cuboids belong to a single particle, which is
     indexed in the 6th element of the cuboids array. The population of the G
@@ -32,16 +23,22 @@ def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
     are given by the loops with the i-j indexes. The flux is stored column
     wise.
 
-    If Origin is True (default), the cuboids are stored with their original
-    coordinates. If cuboids are shifted, Origin is False.
+    Parameters
+    ----------
+    QDM_domain
+        Array of size 2x2 with the lower left and upper right coordinates of
+        the scan surface
+    Origin
+        If True the scan data is set to the QDM lower left corner coordinates.
+        If False, the scan data origin is set at (0., 0.)
     """
 
     Cm = 1e-7
     if Origin is True:
         xi0, eta0 = QDM_domain[0, :]
-        zeta0 = -1 * scan_height
     else:
-        xi0, eta0, zeta0 = 0., 0., (-1) * scan_height
+        xi0, eta0 = 0., 0.
+    zeta0 = (-1) * scan_height
     sensor_pos = np.zeros(3)
     sensor_pos[2] = zeta0
 
@@ -242,8 +239,17 @@ class Dipole(object):
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
 
-    def prepare_matrix(self, Origin=True, verbose=True):
-        """ Prepares for populate_matrix
+    def prepare_matrix(self,
+                       Origin: bool = True,
+                       verbose: bool = True):
+        """ Allocates/instatiates the Numpy arrays to populate the forward
+        matrix
+
+        Parameters
+        ----------
+        Origin
+            If True, use the QDM_domain lower left coordinates as the scan grid
+            origin. If False, set scan grid origin at (0., 0.)
         """
 
         self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
@@ -251,7 +257,7 @@ class Dipole(object):
             self.Forward_G, self.QDM_domain, self.scan_height,
             self.cuboids, self.Npart, self.Ny, self.Nx,
             self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
-            Origin=True, verbose=verbose)
+            Origin=Origin, verbose=verbose)
 
     _MethodOps = Literal['scipy_lapack',
                          'scipy_pinv',
@@ -271,7 +277,7 @@ class Dipole(object):
             The numerical inversion can be done using the SVD algorithms or the
             least squares method. The options available are:
 
-            scipy_lapack    :: Uses scipy.lapack wrappers for dgetrs and dgetrf
+            scipy_lapack    :: Uses scipy lapack wrappers for dgetrs and dgetrf
             scipy_pinv      :: Least squares method
             scipy_pinv2     :: SVD method
             numpy_pinv      :: SVD method
@@ -306,11 +312,11 @@ class Dipole(object):
             elif method == 'scipy_lapack':
                 GtG = np.matmul(self.Forward_G.transpose,
                                 self.Forward_G)
-                GtG_shuffle, IPIV, INFO1 = dgetrf(GtG)
+                GtG_shuffle, IPIV, INFO1 = spl.lapack.dgetrf(GtG)
                 if INFO1 == 0:
                     print(SUCC_MSG)
                     GtQDM = np.matmul(self.Forward_G, QDM_flatten)
-                    self.Mag, INFO2 = dgetrs(GtG_shuffle, IPIV, GtQDM)
+                    self.Mag, INFO2 = spl.lapack.dgetrs(GtG_shuffle, IPIV, GtQDM)
                     if INFO2 != 0:
                         self.Mag = None
                         print(f'{INFO2}th argument has an'
@@ -327,7 +333,7 @@ class Dipole(object):
                   f'{self.Forward_G.shape[0]} knowns and '
                   f'{self.Forward_G.shape[1]} unknowns')
 
-    def obtain_magnetization(self, 
+    def obtain_magnetization(self,
                              verbose: bool = True,
                              method: _MethodOps = 'scipy_pinv',
                              **method_kwargs):
@@ -341,218 +347,8 @@ class Dipole(object):
         self.prepare_matrix(verbose=verbose)
         self.calculate_inverse(method=method, **method_kwargs)
 
-    def plot_contour(self, ax, tol=1e-7):
-        """ Plots contour of grains at a given matplotlib axis object 
-
-        Parameters
-        ----------
-        ax 
-            Matplotlib axis. 
-        tol
-            Tolerance is used to enable merging cuboids of one grain.
-        """
-
-        counter = 0
-        grainnr = 1
-        # plot grains with number
-        for i in range(self.cuboids.shape[0]):
-            xs, ys = self.cuboids[i, 0:2]
-            dx, dy = self.cuboids[i, 3:5]
-
-            # Create overlapping polygon
-            polygon = Polygon([(xs - dx - tol, ys - dy - tol),
-                               (xs - dx - tol, ys + dy + tol),
-                               (xs + dx + tol, ys + dy + tol),
-                               (xs + dx + tol, ys - dy - tol)])
-
-            # If continuing with same grain
-            if self.cuboids[i, 6] == grainnr:
-                if counter == 0:  # No grain created before
-                    united_polygons = polygon
-                    counter += 1
-                else:  # If a polygon has been made before
-                    # Merge polygons into one
-                    united_polygons = cascaded_union([polygon,
-                                                      united_polygons])
-                    counter += 1
-
-            # Last particle
-            if i == self.cuboids.shape[0] - 1:
-                united_polygons = cascaded_union([polygon,
-                                                  united_polygons])
-                mean = united_polygons.representative_point().wkt
-                mean = np.matrix(mean[7:-1])
-                ax.add_patch(PolygonPatch(united_polygons,
-                                          facecolor="None",
-                                          edgecolor='black'))
-                ax.text(mean[0, 0], mean[0, 1], int(grainnr),
-                        fontsize=20,
-                        horizontalalignment="center",
-                        verticalalignment="center")
-
-                # If new grain is started
-            if self.cuboids[i, 6] != grainnr:
-                ax.add_patch(PolygonPatch(united_polygons,
-                                          facecolor="None",
-                                          edgecolor='black'))
-                # Get center united polygon to plot grain number there
-                mean = united_polygons.representative_point().wkt
-                mean = np.matrix(mean[7:-1])
-
-                # Get grain number plotted with corresponding grain
-                ax.text(mean[0, 0], mean[0, 1], int(grainnr),
-                        fontsize=20,
-                        horizontalalignment="center",
-                        verticalalignment="center")
-                grainnr = int(self.cuboids[i, 6])  # New grain number
-                del united_polygons  # Delete old assembled polygon
-                counter = 0  # Reset counter
-                united_polygons = polygon  # Start with new polygon
-                counter += 1
-        return ax
-
-    def plot_magnetization(self, ax, ax2=None,
-                           colormap='coolwarm', tol=1e-7):
-        """ Plots magnetization of grains with colorscale on mpl axis
-        ax2 can be used for the colorbar
-        default colormap is coolwarm
-        tolerance is used to enable merging cuboids
-        of one grain. default is 1e-7
-        """
-
-        counter = 0  # Keeps track of amount of cuboids per grain
-        counter2 = 0  # Keeps track of amount of grains
-        cvalmax = 0
-        grainnr = 1
-
-        # Get minimum/maximum magnetization to make proper colorscale
-        cvalmin = np.sqrt(self.Mag[0] ** 2 + self.Mag[1] ** 2
-                          + self.Mag[2] ** 2)
-        partmin = 1
-        # If more than one grain
-        if self.cuboids.shape[0] > 1:
-            for i in range(self.Npart):
-                cvalnew = np.sqrt(np.power(self.Mag[3 * i], 2)
-                                  + np.power(self.Mag[3 * i + 1], 2)
-                                  + np.power(self.Mag[3 * i + 2], 2))
-                if cvalnew > cvalmax:
-                    cvalmax = cvalnew
-                    partmax = i + 1
-                if cvalmin > cvalnew:
-                    cvalmin = cvalnew
-                    partmin = i + 1
-            print(f"Minimum is {cvalmin} at particle {partmin}."
-                  f" Maximum is {cvalmax} at particle {partmax}.")
-            # get colormap
-            coolwarm = mpl.cm.get_cmap(colormap,
-                                       int((np.log10(cvalmax)
-                                            - np.log10(cvalmin))
-                                           * 1000))
-        else:
-            cvalmax = cvalmin + 100
-            cvalmin = cvalmin - 100
-            print('Only one grain')
-            coolwarm = mpl.cm.get_cmap(colormap, 200)
-
-        # Plot grains now with number
-        for i in range(self.cuboids.shape[0]):
-            xs, ys = self.cuboids[i, 0:2]
-            dx, dy = self.cuboids[i, 3:5]
-
-            # Create polygon
-            polygon = Polygon([(xs - dx - tol, ys - dy - tol),
-                               (xs - dx - tol, ys + dy + tol),
-                               (xs + dx + tol, ys + dy + tol),
-                               (xs + dx + tol, ys - dy - tol)])
-
-            # If continuing with same grain
-            if self.cuboids[i, 6] == grainnr:
-                # If cuboid part of same grain
-                if counter == 0:  # If no polygon has been made before
-                    united_polygons = polygon
-                    counter += 1
-                else:  # If a polygon has been made before
-                    united_polygons = cascaded_union([polygon,
-                                                      united_polygons])
-                    # Merge polygons into one
-                    counter += 1
-
-            # If new grains is started
-            if self.cuboids[i, 6] != grainnr:
-                cvalue = np.sqrt(np.power(self.Mag[3 * counter2], 2)
-                                 + np.power(self.Mag[
-                                     3 * counter2 + 1], 2)
-                                 + np.power(self.Mag[
-                                     3 * counter2 + 2], 2))
-
-                ax.add_patch(PolygonPatch(united_polygons,
-                                          facecolor=coolwarm(int((
-                                              np.log10(cvalue)
-                                              - np.log10(cvalmin))
-                                              * 1000)),
-                                          edgecolor='black'))
-
-                mean = united_polygons.representative_point().wkt
-                mean = np.matrix(mean[7:-1])
-                # Get grain numbers with grains
-                ax.text(mean[0, 0], mean[0, 1], int(grainnr),
-                        fontsize=20,
-                        horizontalalignment="center",
-                        verticalalignment="center")
-                grainnr = int(self.cuboids[i, 6])  # Grain number
-                del united_polygons  # Delete old assembled polygon
-                counter = 0  # Reset counter
-                united_polygons = polygon  # Start with new polygon
-                counter += 1
-                counter2 += 1
-
-            # If last particle is reached
-            if i == self.cuboids.shape[0] - 1:
-                cvalue = np.sqrt(np.power(self.Mag[3 * counter2], 2)
-                                 + np.power(self.Mag[
-                                     3 * counter2 + 1], 2)
-                                 + np.power(self.Mag[
-                                     3 * counter2 + 2], 2))
-                united_polygons = cascaded_union([polygon,
-                                                  united_polygons])
-                mean = united_polygons.representative_point().wkt
-                mean = np.matrix(mean[7:-1])
-
-                # If only one grain in total, go to else
-                if self.cuboids.shape[0] > 1:
-                    ax.add_patch(PolygonPatch(united_polygons,
-                                              facecolor=coolwarm(int((
-                                                  np.log10(cvalue)
-                                                  - np.log10(cvalmin))
-                                                  * 1000)),
-                                              edgecolor='black'))
-                    norm = mpl.colors.LogNorm(vmin=cvalmin,
-                                              vmax=cvalmax)
-
-                else:
-                    ax.add_patch(PolygonPatch(united_polygons,
-                                              facecolor=coolwarm(int(
-                                                  cvalue - cvalmin)),
-                                              edgecolor='black'))
-                    norm = mpl.colors.Normalize(vmin=cvalmin,
-                                                vmax=cvalmax)
-
-                ax.text(mean[0, 0], mean[0, 1], int(grainnr),
-                        fontsize=20,
-                        horizontalalignment="center",
-                        verticalalignment="center")
-
-                if ax2 is not None:
-                    cb1 = mpl.colorbar.ColorbarBase(
-                        ax2, cmap=coolwarm, norm=norm,
-                        orientation='horizontal')
-                    cb1.set_label('M (A/m)')
-                    return ax, ax2
-                else:
-                    return ax
-
-    def save_results(self, 
-                     Magfile: str, 
+    def save_results(self,
+                     Magfile: str,
                      keyfile: str,
                      path_to_plot: str = None,
                      colormap: str = 'coolwarm'):
@@ -579,84 +375,23 @@ class Dipole(object):
         np.savetxt(Magfile, data)
         np.savetxt(keyfile, p_idxs)
 
-        if path_to_plot is not None:
-            self.path_to_plot = Path(path_to_plot)
-            # Original magnetic field with grains
-            fig1, ax = plt.subplots(figsize=(25, 15))
-            Bzplot = ax.imshow(self.QDM_matrix / self.QDM_area,
-                               cmap=colormap,
-                               extent=(self.QDM_domain[0, 0],
-                                       self.QDM_domain[1, 0],
-                                       self.QDM_domain[1, 1],
-                                       self.QDM_domain[0, 1]))
-            ax = self.plot_contour(ax)
-            ax.set_title('Measured field with grains')
-            ax.set_xlim(self.QDM_domain[0, 0], self.QDM_domain[1, 0])
-            ax.set_ylim(self.QDM_domain[0, 1], self.QDM_domain[1, 1])
-            cbar = plt.colorbar(Bzplot)
-            cbar.set_label('B (T)')
-            plt.savefig(self.path_to_plot / "Original_field.png")
+    def forward_field(self, filepath, snrfile=None, tol=0.9):
 
-            # Forward field with grains
-            Forward_field = (np.matmul(
-                self.Forward_G, self.Mag) / self.QDM_area)
-            Forward_field = Forward_field.reshape(self.Ny, self.Nx)
-            fig2, ax = plt.subplots(figsize=(25, 15))
-            Bzforwplot = ax.imshow(Forward_field, cmap=colormap,
-                                   extent=(self.QDM_domain[0, 0],
-                                           self.QDM_domain[1, 0],
-                                           self.QDM_domain[1, 1],
-                                           self.QDM_domain[0, 1]))
-            ax = self.plot_contour(ax)
-            ax.set_title('Forward field with grains')
-            ax.set_xlim(self.QDM_domain[0, 0], self.QDM_domain[1, 0])
-            ax.set_ylim(self.QDM_domain[0, 1], self.QDM_domain[1, 1])
-            cbar = plt.colorbar(Bzforwplot)
-            cbar.set_label('B (T)')
-            plt.savefig(self.path_to_plot / "Forward_field.png")
+        """ Calculates the forward field and signal to noise ratio and saves
+        them (SNR saving is optional)
 
-            # residual field with grains
-            fig3, ax = plt.subplots(figsize=(25, 15))
-            diffplot = ax.imshow(
-                Forward_field - self.QDM_matrix / self.QDM_area,
-                cmap=colormap, extent=(self.QDM_domain[0, 0],
-                                       self.QDM_domain[1, 0],
-                                       self.QDM_domain[1, 1],
-                                       self.QDM_domain[0, 1]))
-            ax = self.plot_contour(ax)
-            ax.set_title('Residual field with grains')
-            ax.set_xlim(self.QDM_domain[0, 0], self.QDM_domain[1, 0])
-            ax.set_ylim(self.QDM_domain[0, 1], self.QDM_domain[1, 1])
-            cbar = plt.colorbar(diffplot)
-            cbar.set_label('B (T)')
-            plt.savefig(self.path_to_plot / "Residual_field.png")
-
-            # Grain magnetization
-            fig4, (ax, ax2) = plt.subplots(2, 1, figsize=(25, 15),
-                                           gridspec_kw={'height_ratios': [10, 1]})
-            diffplot = ax.imshow(
-                Forward_field - self.QDM_matrix / self.QDM_area,
-                cmap='viridis', extent=(self.QDM_domain[0, 0],
-                                        self.QDM_domain[1, 0],
-                                        self.QDM_domain[1, 1],
-                                        self.QDM_domain[0, 1]))
-            ax, ax2 = self.plot_magnetization(ax, ax2)
-            ax.set_title('Residual field with magnetization grains')
-            ax.set_xlim(self.QDM_domain[0, 0], self.QDM_domain[1, 0])
-            ax.set_ylim(self.QDM_domain[0, 1], self.QDM_domain[1, 1])
-#             cbar = plt.colorbar(diffplot)
-#             cbar.set_label('B (T)')
-            plt.savefig(self.path_to_plot / "Magnetization.png")
-
-    def forward_field(self, Forwardfile, snrfile=None, tol=0.9):
-        """ Calculates forward field and signal to noise ratio and saves it
-        tol stands for percentage of signal used (0.9 is 90% default)
-        2nd norm is taken
-        if snrfile is None, no signal to noise ratio is calculated
+        Parameters
+        ----------
+        filepath
+            Path to file to save the forward field
+        snrfile
+            If specified, saves the SNR
+        tol
+            Stands for percentage of signal used (0.9 is 90% default)
         """
 
         Forward_field = np.matmul(self.Forward_G, self.Mag)  # flux field
-        np.savetxt(Forwardfile, Forward_field.reshape(self.Ny, self.Nx)
+        np.savetxt(filepath, Forward_field.reshape(self.Ny, self.Nx)
                    / self.QDM_area)
         if snrfile is not None:
             org_field = self.QDM_matrix.flatten()  # flux field
