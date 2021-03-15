@@ -87,6 +87,8 @@ def plot_magnetization(DipoleIns, ax, ax2=None,
 
     Parameters
     ----------
+    DipoleIns
+        An instance of the Dipole class
     ax
         Matplotlib axis
     ax2
@@ -230,10 +232,17 @@ def plot_magnetization(DipoleIns, ax, ax2=None,
 
 
 # TODO: this function requires to be split. Options need to be more general
-def plot_inversion_results(DipoleIns, colormap='coolwarm'):
+def plot_inversion_results(DipoleIns, save_path, colormap='coolwarm'):
     """
     Plot the results of an inversion using the Dipole class: forward field,
     residual and magnetization
+
+    Parameters
+    ----------
+    DipoleIns
+        An instance of the Dipole class
+    save_path
+        pathlib Path with a directory to which saving the plots
     """
 
     # Original magnetic field with grains
