@@ -2,7 +2,7 @@ import numpy as np
 import numba as nb
 from pathlib import Path
 import scipy.linalg as spl
-from . import cython_lib    # the cython populate_matrix function
+from .cython_lib import pop_matrix_lib    # the cython populate_matrix function
 from typing import Literal  # Working with Python >3.8
 from typing import Union    # Working with Python >3.8
 import os
@@ -304,11 +304,12 @@ class Dipole(object):
         self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
 
         if method == 'cython':
-            self.Forward_G = cython_lib.pop_matrix_lib.populate_matrix_cython(
-                self.Forward_G.T, self.QDM_domain, self.scan_height,
-                self.cuboids, self.Npart, self.Ny, self.Nx,
+            pop_matrix_lib.populate_matrix_cython(
+                self.Forward_G.T, self.QDM_domain[0], self.scan_height,
+                np.ravel(self.cuboids),
+                self.Ncub, self.Npart, self.Ny, self.Nx,
                 self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
-                Origin=Origin, verbose=int(verbose))
+                Origin, int(verbose))
 
         elif method == 'numba':
             self.Forward_G = populate_matrix_numba(
