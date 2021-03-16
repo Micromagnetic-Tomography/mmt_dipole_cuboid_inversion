@@ -1,6 +1,24 @@
 import setuptools
-# from setuptools.extension import Extension
-import sys
+from setuptools.extension import Extension
+# import sys
+# cython and python dependency is handled by pyproject.toml
+from Cython.Build import cythonize
+import numpy
+
+
+# -----------------------------------------------------------------------------
+# Compilation of C module in c_lib
+com_args = ['-std=c99', '-O3']
+extensions = [
+    Extension("dipole_inverse.cython_lib.pop_matrix_lib",
+              ["dipole_inverse/cython_lib/pop_matrix_lib.pyx",
+               "dipole_inverse/cython_lib/pop_matrix_C_lib.c"],
+              extra_compile_args=com_args,
+              include_dirs=[numpy.get_include()]
+              ),
+]
+
+# -----------------------------------------------------------------------------
 
 with open('README.md') as f:
     long_description = f.read()
@@ -15,6 +33,7 @@ setuptools.setup(
     author='F. Out, D. Cortes, M. Kosters, K. Fabian, L. V. de Groot',
     author_email='f.out@students.uu.nl',
     packages=setuptools.find_packages(),
+    ext_modules=cythonize(extensions),
     install_requires=['matplotlib',
                       'numpy',
                       'scipy',
