@@ -220,6 +220,8 @@ class Dipole(object):
         self.scan_height = scan_height
 
         self._max_num_threads = "-1"
+        # somehow setting str manually (instead of the setter doing this)
+        # avoids mypy to complain -> TODO: make minimal example
         self.max_num_threads = str(max_num_threads)
 
         self.Ny, self.Nx = np.loadtxt(QDM_data).shape
@@ -264,7 +266,7 @@ class Dipole(object):
             os.environ["VECLIB_MAXIMUM_THREADS"] = self._max_num_threads
             os.environ["NUMEXPR_NUM_THREADS"] = self._max_num_threads
 
-    def read_files(self, factor=1e-6):
+    def read_files(self, factor: float = 1e-6):
         """ Reads in QDM_data and cuboid_data
         """
 
