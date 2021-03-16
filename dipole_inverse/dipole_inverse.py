@@ -2,13 +2,14 @@ import numpy as np
 import numba as nb
 from pathlib import Path
 import scipy.linalg as spl
+from . import cython_lib    # the cython populate_matrix function 
 from typing import Literal  # Working with Python >3.8
 
 
 @nb.jit(nopython=True)
-def populate_matrix(G, QDM_domain, scan_height, cuboids, Npart,
-                    Ny, Nx, QDM_spacing, QDM_deltax, QDM_deltay,
-                    Origin, verbose=True):
+def populate_matrix_numba(G, QDM_domain, scan_height, cuboids, Npart,
+                          Ny, Nx, QDM_spacing, QDM_deltax, QDM_deltay,
+                          Origin, verbose=True):
     """
     Main function to populate the G matrix
 
@@ -239,9 +240,13 @@ class Dipole(object):
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
 
+    _PrepMatOps = Literal['cython', 'numba']
+
     def prepare_matrix(self,
                        Origin: bool = True,
-                       verbose: bool = True):
+                       verbose: bool = True,
+                       method: _PrepMatOps = 'cython'
+                       ):
         """ Allocates/instatiates the Numpy arrays to populate the forward
         matrix
 
@@ -250,14 +255,30 @@ class Dipole(object):
         Origin
             If True, use the QDM_domain lower left coordinates as the scan grid
             origin. If False, set scan grid origin at (0., 0.)
+        verbose
+            Set to True to print log information when populating the matrix
+        method
+            Populating the matrix can be done using either 'numba' or 'cython'
+            optimisation. The cython function is parallelized with OpenMP thus 
+            the number of threads is specified from the OMP_NUM_THREADS
+            system variable.
         """
 
         self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
-        self.Forward_G = populate_matrix(
-            self.Forward_G, self.QDM_domain, self.scan_height,
-            self.cuboids, self.Npart, self.Ny, self.Nx,
-            self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
-            Origin=Origin, verbose=verbose)
+
+        if method == 'cython':
+            self.Forward_G = cython_lib.pop_matrix_lib.populate_matrix_cython(
+                self.Forward_G.T, self.QDM_domain, self.scan_height,
+                self.cuboids, self.Npart, self.Ny, self.Nx,
+                self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
+                Origin=Origin, verbose=int(verbose))
+
+        elif method == 'numba':
+            self.Forward_G = populate_matrix_numba(
+                self.Forward_G, self.QDM_domain, self.scan_height,
+                self.cuboids, self.Npart, self.Ny, self.Nx,
+                self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
+                Origin=Origin, verbose=verbose)
 
     _MethodOps = Literal['scipy_lapack',
                          'scipy_pinv',

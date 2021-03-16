@@ -24,7 +24,7 @@ void populate_matrix_C(double * G,
                        double * cuboids, int N_cuboids, int Npart,
                        int Ny, int Nx, double QDM_spacing,
                        double QDM_deltax, double QDM_deltay,
-                       int Origin
+                       int Origin, int verbose
                        ) {
 
     double Cm = 1e-7;
@@ -50,7 +50,9 @@ void populate_matrix_C(double * G,
     // print('G matrix', G.shape)
 
     while (i_cuboid < N_cuboids) {
-        printf("Particle = %d   Cuboid = %d\n", i_particle, i_cuboid);
+        if(verbose == 1) {
+            printf("Particle = %d   Cuboid = %d\n", i_particle, i_cuboid);
+        }
         // print(particle =)
         i_cuboid_old = i_cuboid;
 

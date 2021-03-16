@@ -9,7 +9,7 @@ cdef extern from "pop_matrix_C_lib.h":
                            double * cuboids, int N_cuboids, int Npart,
                            int Ny, int Nx, double QDM_spacing,
                            double QDM_deltax, double QDM_deltay,
-                           int Origin
+                           int Origin, int verbose
                            )
 
 # -----------------------------------------------------------------------------
@@ -20,7 +20,7 @@ def populate_matrix_cython(double [:, :] G,
                            double [:] cuboids, int N_cuboids,
                            int Npart, int Ny, int Nx, double QDM_spacing,
                            double QDM_deltax, double QDM_deltay,
-                           int Origin):
+                           int Origin, int verbose):
 
     # I guess G is passed as a column-order (C) 1D array to the C code
     populate_matrix_C(&G[0, 0],
@@ -28,5 +28,5 @@ def populate_matrix_cython(double [:, :] G,
                       &cuboids[0], N_cuboids, Npart,
                       Ny, Nx, QDM_spacing,
                       QDM_deltax, QDM_deltay,
-                      Origin
+                      Origin, verbose
                       )
