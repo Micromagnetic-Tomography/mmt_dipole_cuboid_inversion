@@ -2,8 +2,10 @@ import numpy as np
 import numba as nb
 from pathlib import Path
 import scipy.linalg as spl
-from . import cython_lib    # the cython populate_matrix function 
+from . import cython_lib    # the cython populate_matrix function
 from typing import Literal  # Working with Python >3.8
+from typing import Union    # Working with Python >3.8
+import os
 
 
 @nb.jit(nopython=True)
@@ -151,7 +153,9 @@ class Dipole(object):
                  QDM_area: float,
                  sample_height: float,
                  scan_height: float,
-                 tol: float = 1e-7):
+                 tol: float = 1e-7,
+                 max_num_threads: int = -1
+                 ):
         """
         This class calculates the magnetization of a group of magnetic grains
         from a surface with magnetic field scan data.
@@ -180,6 +184,11 @@ class Dipole(object):
             Distance between sample and QDM scanner in metres
         tol
             Tolerance for checking QDM_domain. Default is 1e-7
+        max_num_threads
+            Limits the maximum number of threads used by
+            parallel/multi-threaded functions. This is done by setting multiple
+            environment variables. This can be updated at any time.
+            See the docstring of the self.max_num_threads variable for details.
 
         Attributes
         ----------
@@ -210,6 +219,9 @@ class Dipole(object):
         self.sample_height = sample_height
         self.scan_height = scan_height
 
+        self._max_num_threads = "-1"
+        self.max_num_threads = str(max_num_threads)
+
         self.Ny, self.Nx = np.loadtxt(QDM_data).shape
         new_domain = self.QDM_domain[0, 0] \
             + (self.Nx - 1) * self.QDM_spacing
@@ -229,6 +241,28 @@ class Dipole(object):
                - self.QDM_area) > tol**2:
             print('The sensor is not a rectangle. '
                   'Calculation will probably go wrong here!')
+
+    @property
+    def max_num_threads(self) -> str:
+        """Get the maximum number of threads and according to this value set
+        multiple environment variables to limit the threads used in
+        parallel/multi-threaded functions. This property will limit:
+            OPENMP, OPENBLAS, MKL, VECLIB and NUMEXPR
+
+        If max_num_threads is set to a value < 0, environment variables are not
+        updated
+        """
+        return self._max_num_threads
+
+    @max_num_threads.setter
+    def max_num_threads(self, max_threads: Union[int, str]):
+        self._max_num_threads = str(max_threads)
+        if int(max_threads) > 0:
+            os.environ["OMP_NUM_THREADS"] = self._max_num_threads
+            os.environ["OPENBLAS_NUM_THREADS"] = self._max_num_threads
+            os.environ["MKL_NUM_THREADS"] = self._max_num_threads
+            os.environ["VECLIB_MAXIMUM_THREADS"] = self._max_num_threads
+            os.environ["NUMEXPR_NUM_THREADS"] = self._max_num_threads
 
     def read_files(self, factor=1e-6):
         """ Reads in QDM_data and cuboid_data
@@ -259,9 +293,10 @@ class Dipole(object):
             Set to True to print log information when populating the matrix
         method
             Populating the matrix can be done using either 'numba' or 'cython'
-            optimisation. The cython function is parallelized with OpenMP thus 
-            the number of threads is specified from the OMP_NUM_THREADS
-            system variable.
+            optimisation.
+            The cython function is parallelized with OpenMP thus the number of
+            threads is specified from the OMP_NUM_THREADS system variable. This
+            can be limited by setting self.max_num_threads
         """
 
         self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
