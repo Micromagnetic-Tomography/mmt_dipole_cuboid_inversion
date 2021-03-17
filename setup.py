@@ -8,12 +8,14 @@ import numpy
 
 # -----------------------------------------------------------------------------
 # Compilation of C module in c_lib
-com_args = ['-std=c99', '-O3']
+com_args = ['-std=c99', '-O3', '-fopenmp']
+link_args = ['-fopenmp']
 extensions = [
     Extension("dipole_inverse.cython_lib.pop_matrix_lib",
               ["dipole_inverse/cython_lib/pop_matrix_lib.pyx",
                "dipole_inverse/cython_lib/pop_matrix_C_lib.c"],
               extra_compile_args=com_args,
+              extra_link_args=link_args,
               include_dirs=[numpy.get_include()]
               ),
 ]
