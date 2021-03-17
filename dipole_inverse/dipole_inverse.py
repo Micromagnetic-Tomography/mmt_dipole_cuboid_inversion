@@ -287,7 +287,7 @@ class Dipole(object):
 
     _MethodOps = Literal['scipy_lapack',
                          'scipy_pinv',
-                         'scipy_pinv2'
+                         'scipy_pinv2',
                          'numpy_pinv']
 
     def calculate_inverse(self,
