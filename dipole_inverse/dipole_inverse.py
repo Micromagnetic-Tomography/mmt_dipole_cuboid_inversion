@@ -373,14 +373,14 @@ class Dipole(object):
         method_populate
             Method to populate the forward matrix
         method_inverse
-            Method to calculate the numerical inversion. See 
-            self.calculate_inverse docstring for details about the method 
+            Method to calculate the numerical inversion. See
+            self.calculate_inverse docstring for details about the method
             parameters
         """
 
         self.read_files()
         self.prepare_matrix(method=method_populate, verbose=verbose)
-        self.calculate_inverse(method=method_inverse, verbose=verbose,
+        self.calculate_inverse(method=method_inverse,
                                **method_inverse_kwargs)
 
     def save_results(self,
