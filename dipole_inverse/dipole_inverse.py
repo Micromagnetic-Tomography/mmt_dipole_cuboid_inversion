@@ -138,7 +138,6 @@ def populate_matrix_numba(G, QDM_domain, scan_height, cuboids, Npart,
 
         i_particle_prev = i_particle
         i_particle_0_N += 1
-    return G
 
 
 class Dipole(object):
@@ -268,18 +267,21 @@ class Dipole(object):
             can be limited using set_max_num_threads in the tools module
         """
 
-        self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
-
         if method == 'cython':
+            # The Cython function populates the matrix row-wise, thus we
+            # must transpose it after populating
+            self.Forward_G = np.zeros((3 * self.Npart, self.Nx * self.Ny))
             pop_matrix_lib.populate_matrix_cython(
-                self.Forward_G.T, self.QDM_domain[0], self.scan_height,
-                np.ravel(self.cuboids),
-                self.Ncub, self.Npart, self.Ny, self.Nx,
+                self.Forward_G, self.QDM_domain[0], self.scan_height,
+                np.ravel(self.cuboids), self.Ncub,
+                self.Npart, self.Ny, self.Nx,
                 self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
                 Origin, int(verbose))
+            self.Forward_G = self.Forward_G.T
 
         elif method == 'numba':
-            self.Forward_G = populate_matrix_numba(
+            self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
+            populate_matrix_numba(
                 self.Forward_G, self.QDM_domain, self.scan_height,
                 self.cuboids, self.Npart, self.Ny, self.Nx,
                 self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
