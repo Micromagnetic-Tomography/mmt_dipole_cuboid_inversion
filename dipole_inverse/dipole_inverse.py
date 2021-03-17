@@ -361,17 +361,27 @@ class Dipole(object):
 
     def obtain_magnetization(self,
                              verbose: bool = True,
-                             method: _MethodOps = 'scipy_pinv',
-                             **method_kwargs):
+                             method_populate: _PrepMatOps = 'cython',
+                             method_inverse: _MethodOps = 'scipy_pinv',
+                             **method_inverse_kwargs):
         """
         A shortcut method to call three functions to compute the magnetization
-        of the grains. See self.calculate_inverse docstring for details about
-        the method parameter.
+        of the grains.
+
+        Parameters
+        ----------
+        method_populate
+            Method to populate the forward matrix
+        method_inverse
+            Method to calculate the numerical inversion. See 
+            self.calculate_inverse docstring for details about the method 
+            parameters
         """
 
         self.read_files()
-        self.prepare_matrix(verbose=verbose)
-        self.calculate_inverse(method=method, **method_kwargs)
+        self.prepare_matrix(method=method_populate, verbose=verbose)
+        self.calculate_inverse(method=method_inverse, verbose=verbose,
+                               **method_inverse_kwargs)
 
     def save_results(self,
                      Magfile: str,
