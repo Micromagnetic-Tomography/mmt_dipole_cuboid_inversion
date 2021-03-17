@@ -28,7 +28,7 @@ with open('README.md') as f:
 setuptools.setup(
     # setup_requires=['cython'],  # not working (see the link at top)
     name='dipole_inverse',
-    version='1.0',
+    version='1.9',
     description=('Python lib to calculate dipole magnetization'),
     long_description=long_description,
     long_description_content_type='text/markdown',
