@@ -1,10 +1,10 @@
 import numpy as np
 import shapely.geometry as shg
 import shapely.ops as sho
-from typing import Union
+from typing import Tuple
 
 
-def generate_grain_vertices(cuboids: np.ndarray):
+def generate_grain_vertices(cuboids: np.ndarray) -> np.ndarray:
     """
     Generate grain vertices from a Numpy array containing at leats 6 columns
 
@@ -26,10 +26,10 @@ def generate_grain_vertices(cuboids: np.ndarray):
 
 def generate_grain_geometries(cuboids: np.ndarray,
                               grain_vertices: np.ndarray,
-                              cuboid_idxs: Union[None, np.ndarray] = None,
-                              cuboid_idxs_unique: Union[None, np.ndarray] = None,
+                              cuboid_idxs: np.ndarray = np.array([]),
+                              cuboid_idxs_unique: np.ndarray = np.array([]),
                               polygon_buffer: float = 1e-5
-                              ):
+                              ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Generates polygons defining grain outlines from groups of cuboids. Polygons
     are given as shapely polygon objects.
@@ -44,11 +44,11 @@ def generate_grain_geometries(cuboids: np.ndarray,
 
     Returns
     -------
-        
+
     """
-    if not cuboid_idxs:
+    if cuboid_idxs.size == 0:
         cuboid_idxs = cuboids[:, 6].astype(np.int32)
-    if not cuboid_idxs_unique:
+    if cuboid_idxs_unique == 0:
         cuboid_idxs_unique = np.unique(cuboid_idxs)
     grain_geoms = []
     for p in cuboid_idxs_unique:
