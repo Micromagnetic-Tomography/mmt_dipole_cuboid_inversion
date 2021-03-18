@@ -139,8 +139,8 @@ def plot_scan_field(DipoleIns,
     """
     """
 
-    dx = DipoleIns.QDM_domain_deltax * 0.5
-    dy = DipoleIns.QDM_domain_deltay * 0.5
+    dx = DipoleIns.QDM_deltax * 0.5
+    dy = DipoleIns.QDM_deltay * 0.5
 
     im = ax.imshow(DipoleIns.QDM_matrix, origin='lower',
                    extent=[DipoleIns.QDM_domain[0, 0] - dx,
@@ -158,8 +158,8 @@ def plot_inversion_field(DipoleIns,
     """
     """
 
-    dx = DipoleIns.QDM_domain_deltax * 0.5
-    dy = DipoleIns.QDM_domain_deltay * 0.5
+    dx = DipoleIns.QDM_deltax * 0.5
+    dy = DipoleIns.QDM_deltay * 0.5
 
     inv_field = (DipoleIns.Forward_G @ DipoleIns.Mag).reshape(DipoleIns.Ny, -1)
     im = ax.imshow(inv_field, origin='lower',
