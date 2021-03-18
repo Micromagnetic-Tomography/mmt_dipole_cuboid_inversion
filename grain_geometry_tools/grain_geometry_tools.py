@@ -54,7 +54,7 @@ def generate_grain_geometries(cuboids: np.ndarray,
 
     if cuboid_idxs.size == 0:
         cuboid_idxs = cuboids[:, 6].astype(np.int32)
-    if cuboid_idxs_unique == 0:
+    if cuboid_idxs_unique.size == 0:
         cuboid_idxs_unique = np.unique(cuboid_idxs)
 
     grain_geoms = []
