@@ -59,6 +59,8 @@ def set_grain_geometries(DipoleIns,
 
 def plot_grain_boundaries(DipoleIns, ax,
                           grain_labels=True,
+                          boundaries_args=dict(ec=(0, 0, 0, 1)),
+                          labels_args=dict(ha='center', va='center'),
                           tol=1e-7):
     """
     Plots the grain boundaries viewed from a bird eye perspective at the
@@ -74,14 +76,12 @@ def plot_grain_boundaries(DipoleIns, ax,
         An instance of the Dipole class
     ax
         Matplotlib axis
+    boundaries_args
+        Arguments to the PolyCollection handling the boundary drawings
+    labels_args
+        Arguments to the matplotlib text objects handling the grain labels
     tol
         Tolerance used to enable merging cuboids of one grain
-
-    Returns
-    -------
-    (p, txt) or p
-        A tuple with the PolyCollection object with the grain boundaries and
-        (optional) the matplotlib text object handling the grain labels
 
     """
     grain_geoms_coords = DipoleIns.grain_geoms_coords
@@ -93,33 +93,28 @@ def plot_grain_boundaries(DipoleIns, ax,
         col = PolyCollection([grain_geoms_coords[pg_key] * scale],
                              # fc=cmap(i + 1),
                              fc=(0, 0, 0, 0),
-                             ec=(0, 0, 0, 1),
+                             **boundaries_args
                              )
-        p = ax.add_collection(col)
+        ax.add_collection(col)
 
     if grain_labels:
         grain_cs = DipoleIns.grain_centroids
         for grain_idx in grain_cs:
-            txt = ax.text(grain_cs[grain_idx][0] * scale, 
-                          grain_cs[grain_idx][1] * scale,
-                          grain_idx,
-                          # fontsize=20,
-                          ha="center",
-                          va="center")
+            ax.text(grain_cs[grain_idx][0] * scale,
+                    grain_cs[grain_idx][1] * scale,
+                    grain_idx,
+                    **labels_args
+                    )
 
     ax.autoscale()
-
-    if grain_labels:
-        return p, txt
-    else:
-        return p
 
 
 def plot_magnetization_on_grains(DipoleIns,
                                  ax,
                                  mag_log_scale=True,
+                                 grain_plot_args=dict(cmap='coolwarm'),
                                  grain_labels=True,
-                                 colormap='coolwarm',
+                                 labels_args=dict(ha='center', va='center'),
                                  tol=1e-7):
     """
     Plots the magnetization of grains with colorscale on a Matplotlib axis
@@ -136,18 +131,17 @@ def plot_magnetization_on_grains(DipoleIns,
         Matplotlib axis
     mag_log_scale
         Color grains using a log scale of the magnetization
+    grain_plot_args
+        Arguments to the matplotlib PolyCollection handling the plotting of
+        the grains. For example, set the colormap and clim (color limits) of
+        the grains
     grain_labels
         Draw index labels at the centroid of the grains
-    colormap
-        Colormap of the magnetization
+    labels_args
+        Arguments to the matplotlib text objects handling the grain labels
     tol
         Tolerance used to enable merging cuboids of one grain
 
-    Returns
-    -------
-    (p, txt) or p
-        A tuple with the PolyCollection object with the grain boundaries and
-        (optional) the matplotlib text object handling the grain labels
     """
 
     scale = DipoleIns.spatial_scaling
@@ -167,9 +161,7 @@ def plot_magnetization_on_grains(DipoleIns,
     mag_per_cuboid = np.repeat(mag, cuboid_idxs_counts)
     if mag_log_scale:
         mag_per_cuboid = np.log(mag_per_cuboid)
-    col.set(array=mag_per_cuboid, cmap='coolwarm',
-            # clim=(1e2, 1e8)
-            )
+    col.set(array=mag_per_cuboid, **grain_plot_args)
     p = ax.add_collection(col)
 
     if grain_labels:
@@ -177,16 +169,9 @@ def plot_magnetization_on_grains(DipoleIns,
             txt = ax.text(grain_cs[grain_idx][0] * scale,
                           grain_cs[grain_idx][1] * scale,
                           grain_idx,
-                          # fontsize=20,
-                          ha="center",
-                          va="center")
+                          **labels_args)
 
     ax.autoscale()
-
-    if grain_labels:
-        return p, txt
-    else:
-        return p
 
 
 def plot_scan_field(DipoleIns,
