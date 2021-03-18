@@ -2,6 +2,7 @@ import numpy as np
 import shapely.geometry as shg
 import shapely.ops as sho
 from typing import Tuple
+from typing import Union
 
 
 def generate_grain_vertices(cuboids: np.ndarray) -> np.ndarray:
@@ -28,8 +29,10 @@ def generate_grain_geometries(cuboids: np.ndarray,
                               grain_vertices: np.ndarray,
                               cuboid_idxs: np.ndarray = np.array([]),
                               cuboid_idxs_unique: np.ndarray = np.array([]),
-                              polygon_buffer: float = 1e-5
-                              ) -> Tuple[np.ndarray, np.ndarray]:
+                              polygon_buffer: float = 1e-5,
+                              generate_labels: bool = False,
+                              ) -> Union[Tuple[list, dict],
+                                         Tuple[list, dict, dict]]:
     """
     Generates polygons defining grain outlines from groups of cuboids. Polygons
     are given as shapely polygon objects.
@@ -46,10 +49,14 @@ def generate_grain_geometries(cuboids: np.ndarray,
     -------
 
     """
+    # TODO: In Ptyhon >3.9 we can be more specific about the types returned:
+    # dict[np.ndarray] for example, without importing Dict from typing
+
     if cuboid_idxs.size == 0:
         cuboid_idxs = cuboids[:, 6].astype(np.int32)
     if cuboid_idxs_unique == 0:
         cuboid_idxs_unique = np.unique(cuboid_idxs)
+
     grain_geoms = []
     for p in cuboid_idxs_unique:
         polygons = map(shg.Polygon,
@@ -66,9 +73,14 @@ def generate_grain_geometries(cuboids: np.ndarray,
     # Now get the coordinates of every grain geometry. If we have a
     # Multipolygon, we get the coordinates from separate entities
     # We save every geometry in a dictionary entry
+    grain_labs = {}
     grain_geoms_coords = {}
     for i, pg in enumerate(grain_geoms):
         idx = cuboid_idxs_unique[i]  # get index of the grain
+
+        if generate_labels:
+            labc = pg.representative_point().xy
+            grain_labs[idx] = np.array(labc).reshape(-1)
 
         if pg.type == 'MultiPolygon':
             grain_geoms_coords[idx] = np.empty((0, 2))
@@ -81,4 +93,7 @@ def generate_grain_geometries(cuboids: np.ndarray,
             coords = pg.exterior.coords.xy
             grain_geoms_coords[idx] = np.column_stack(coords)
 
-    return grain_geoms, grain_geoms_coords
+    if generate_labels:
+        return grain_geoms, grain_geoms_coords, grain_labs
+    else:
+        return grain_geoms, grain_geoms_coords
