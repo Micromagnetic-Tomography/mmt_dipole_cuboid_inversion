@@ -30,7 +30,7 @@ def generate_grain_geometries(cuboids: np.ndarray,
                               cuboid_idxs: np.ndarray = np.array([]),
                               cuboid_idxs_unique: np.ndarray = np.array([]),
                               polygon_buffer: float = 1e-5,
-                              generate_labels: bool = False,
+                              generate_centroids: bool = False,
                               ) -> Union[Tuple[list, dict],
                                          Tuple[list, dict, dict]]:
     """
@@ -73,14 +73,14 @@ def generate_grain_geometries(cuboids: np.ndarray,
     # Now get the coordinates of every grain geometry. If we have a
     # Multipolygon, we get the coordinates from separate entities
     # We save every geometry in a dictionary entry
-    grain_labs = {}
+    grain_centroids = {}
     grain_geoms_coords = {}
     for i, pg in enumerate(grain_geoms):
         idx = cuboid_idxs_unique[i]  # get index of the grain
 
-        if generate_labels:
-            labc = pg.representative_point().xy
-            grain_labs[idx] = np.array(labc).reshape(-1)
+        if generate_centroids:
+            grainc = pg.representative_point().xy
+            grain_centroids[idx] = np.array(grainc).reshape(-1)
 
         if pg.type == 'MultiPolygon':
             grain_geoms_coords[idx] = np.empty((0, 2))
@@ -93,7 +93,7 @@ def generate_grain_geometries(cuboids: np.ndarray,
             coords = pg.exterior.coords.xy
             grain_geoms_coords[idx] = np.column_stack(coords)
 
-    if generate_labels:
-        return grain_geoms, grain_geoms_coords, grain_labs
+    if generate_centroids:
+        return grain_geoms, grain_geoms_coords, grain_centroids
     else:
         return grain_geoms, grain_geoms_coords
