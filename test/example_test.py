@@ -3,10 +3,10 @@
 from dipole_inverse_tools import set_max_num_threads
 import numpy as np
 from pathlib import Path
-set_max_num_threads(1)
+set_max_num_threads(6)
 import dipole_inverse as dpinv  # noqa: E402
 
-data_path = Path('./Example_data/')
+data_path = Path('./tutorial_qdm_data/')
 
 # location and name of QDM and cuboid file
 QDMfile = data_path / 'class_QDM_result2.txt'
