@@ -197,8 +197,8 @@ def plot_scan_field(DipoleIns,
 
     scale = DipoleIns.spatial_scaling
 
-    dx = scale * DipoleIns.QDM_deltax * 0.5
-    dy = scale * DipoleIns.QDM_deltay * 0.5
+    dx = scale * DipoleIns.QDM_deltax
+    dy = scale * DipoleIns.QDM_deltay
 
     im = ax.imshow(DipoleIns.QDM_matrix, origin='lower',
                    extent=[scale * DipoleIns.QDM_domain[0, 0] - dx,
@@ -232,8 +232,8 @@ def plot_inversion_field(DipoleIns,
     """
     scale = DipoleIns.spatial_scaling
 
-    dx = scale * DipoleIns.QDM_deltax * 0.5
-    dy = scale * DipoleIns.QDM_deltay * 0.5
+    dx = scale * DipoleIns.QDM_deltax
+    dy = scale * DipoleIns.QDM_deltay
 
     inv_field = (DipoleIns.Forward_G @ DipoleIns.Mag).reshape(DipoleIns.Ny, -1)
     im = ax.imshow(inv_field, origin='lower',
@@ -277,8 +277,8 @@ def plot_residual(DipoleIns,
     else:
         scale_res = 1.
 
-    dx = scale * DipoleIns.QDM_domain_deltax * 0.5
-    dy = scale * DipoleIns.QDM_domain_deltay * 0.5
+    dx = scale * DipoleIns.QDM_domain_deltax
+    dy = scale * DipoleIns.QDM_domain_deltay
 
     Forward_field = (DipoleIns.Forward_G @ DipoleIns.Mag) / scale_res
     Forward_field.shape = (DipoleIns.Ny, DipoleIns.Nx)
