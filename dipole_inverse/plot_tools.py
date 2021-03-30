@@ -277,12 +277,12 @@ def plot_residual(DipoleIns,
     else:
         scale_res = 1.
 
-    dx = scale * DipoleIns.QDM_domain_deltax
-    dy = scale * DipoleIns.QDM_domain_deltay
+    dx = scale * DipoleIns.QDM_deltax
+    dy = scale * DipoleIns.QDM_deltay
 
     Forward_field = (DipoleIns.Forward_G @ DipoleIns.Mag) / scale_res
     Forward_field.shape = (DipoleIns.Ny, DipoleIns.Nx)
-    res = Forward_field - DipoleIns.QDM_matrix / scale_res,
+    res = Forward_field - DipoleIns.QDM_matrix / scale_res
 
     im = ax.imshow(res, origin='lower',
                    extent=[scale * DipoleIns.QDM_domain[0, 0] - dx,
