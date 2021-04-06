@@ -46,7 +46,7 @@ void populate_matrix_C(double * G,
     int i_particle = i_particle_prev;
  
     // If grains are not numbered in order this always works
-    int i_particle_0_N = 0
+    int i_particle_0_N = 0;
 
     while (i_cuboid < N_cuboids) {
         if(verbose == 1) {
