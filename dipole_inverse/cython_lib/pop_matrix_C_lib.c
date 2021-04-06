@@ -44,16 +44,14 @@ void populate_matrix_C(double * G,
     int i_cuboid_old = 0;
     int i_particle_prev = (int) cuboids[6];
     int i_particle = i_particle_prev;
-
-
-    // print('max cub =', Npart)
-    // print('G matrix', G.shape)
+ 
+    // If grains are not numbered in order this always works
+    int i_particle_0_N = 0
 
     while (i_cuboid < N_cuboids) {
         if(verbose == 1) {
             printf("Particle = %d   Cuboid = %d\n", i_particle, i_cuboid);
         }
-        // print(particle =)
         i_cuboid_old = i_cuboid;
 
         // Loop over sensor measurements. Each sensor is in the xy
@@ -147,9 +145,9 @@ void populate_matrix_C(double * G,
 
             // printf("%d %d", i + j * Nx, 3 * i_particle_prev);
             // Trying to populate G row wise:
-            G[Nx * Ny * (3 * (i_particle_prev - 1)    ) + i + Nx * j] = particle_flux[0];
-            G[Nx * Ny * (3 * (i_particle_prev - 1) + 1) + i + Nx * j] = particle_flux[1];
-            G[Nx * Ny * (3 * (i_particle_prev - 1) + 2) + i + Nx * j] = particle_flux[2];
+            G[Nx * Ny * (3 * (i_particle_0_N - 1)    ) + i + Nx * j] = particle_flux[0];
+            G[Nx * Ny * (3 * (i_particle_0_N - 1) + 1) + i + Nx * j] = particle_flux[1];
+            G[Nx * Ny * (3 * (i_particle_0_N - 1) + 2) + i + Nx * j] = particle_flux[2];
             // DO NOT forget to transpose G after calling this function!
             //
             // OLD CODE:
@@ -160,6 +158,9 @@ void populate_matrix_C(double * G,
 
         } // end for n
 
+        // Move to next particle
         i_particle_prev = i_particle;
+        // Update particle number indexed from 0 to N
+        i_particle_0_N += 1;
     } // end while total cuboids
 } // main function
