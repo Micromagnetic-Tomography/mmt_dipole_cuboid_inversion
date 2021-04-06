@@ -145,9 +145,9 @@ void populate_matrix_C(double * G,
 
             // printf("%d %d", i + j * Nx, 3 * i_particle_prev);
             // Trying to populate G row wise:
-            G[Nx * Ny * (3 * (i_particle_0_N - 1)    ) + i + Nx * j] = particle_flux[0];
-            G[Nx * Ny * (3 * (i_particle_0_N - 1) + 1) + i + Nx * j] = particle_flux[1];
-            G[Nx * Ny * (3 * (i_particle_0_N - 1) + 2) + i + Nx * j] = particle_flux[2];
+            G[Nx * Ny * (3 * i_particle_0_N    ) + i + Nx * j] = particle_flux[0];
+            G[Nx * Ny * (3 * i_particle_0_N + 1) + i + Nx * j] = particle_flux[1];
+            G[Nx * Ny * (3 * i_particle_0_N + 2) + i + Nx * j] = particle_flux[2];
             // DO NOT forget to transpose G after calling this function!
             //
             // OLD CODE:
