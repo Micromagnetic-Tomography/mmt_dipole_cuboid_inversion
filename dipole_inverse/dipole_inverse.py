@@ -151,8 +151,7 @@ class Dipole(object):
                  QDM_deltay: float,
                  QDM_area: float,
                  sample_height: float,
-                 scan_height: float,
-                 tol: float = 1e-7
+                 scan_height: float
                  ):
         """
         This class calculates the magnetization of a group of magnetic grains
@@ -180,8 +179,6 @@ class Dipole(object):
             Thickness of sample in metres
         scan_height
             Distance between sample and QDM scanner in metres
-        tol
-            Tolerance for checking QDM_domain. Default is 1e-7
 
         Attributes
         ----------
@@ -197,8 +194,12 @@ class Dipole(object):
         Nx, Ny
         QDM_domain
 
-        cuboids
+        * The read_files function sets:
 
+        QDM_matrix
+        cuboids
+        Npart
+        Ncub
 
         """
 
@@ -212,33 +213,48 @@ class Dipole(object):
         self.sample_height = sample_height
         self.scan_height = scan_height
 
-        self.Ny, self.Nx = np.loadtxt(QDM_data).shape
-        new_domain = self.QDM_domain[0, 0] \
-            + (self.Nx - 1) * self.QDM_spacing
+    def read_files(self,
+                   cuboid_scaling_factor: float = 1e-6,
+                   tol: float = 1e-7):
+        """ Reads in QDM_data and cuboid_data. This function also corrects the
+        limits of the QDM_domain attribute according to the size of the QDM
+        data matrix.
+
+        Parameters
+        ----------
+        cuboid_scaling_factor
+            Scaling factor for the cuboid positions and lengths
+        tol
+            Tolerance for checking QDM_domain. Default is 1e-7
+        """
+
+        self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
+
+        # ---------------------------------------------------------------------
+        # Set the limits of the QDM domain
+
+        self.Ny, self.Nx = self.QDM_matrix.shape
+        new_domain = self.QDM_domain[0, 0] + (self.Nx - 1) * self.QDM_spacing
         if abs(new_domain - self.QDM_domain[1, 0]) > tol:
             print(f'QDM_domain[1, 0] has been reset from '
                   f'{self.QDM_domain[1, 0]} to {new_domain}.')
             self.QDM_domain[1, 0] = new_domain
 
-        new_domain = self.QDM_domain[0, 1] \
-            + (self.Ny - 1) * self.QDM_spacing
+        new_domain = self.QDM_domain[0, 1] + (self.Ny - 1) * self.QDM_spacing
         if abs(new_domain - self.QDM_domain[1, 1]) > tol:
             print(f'QDM_domain[1, 1] has been reset from '
                   f'{self.QDM_domain[1, 1]} to {new_domain}.')
             self.QDM_domain[1, 1] = new_domain
 
-        if abs(self.QDM_deltax * self.QDM_deltay * 4
-               - self.QDM_area) > tol**2:
+        if abs(self.QDM_deltax * self.QDM_deltay * 4 - self.QDM_area) > tol**2:
             print('The sensor is not a rectangle. '
                   'Calculation will probably go wrong here!')
 
-    def read_files(self, factor: float = 1e-6):
-        """ Reads in QDM_data and cuboid_data
-        """
+        # ---------------------------------------------------------------------
 
-        self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
-        self.cuboids = np.loadtxt(self.cuboid_data)
-        self.cuboids[:, :6] = self.cuboids[:, :6] * factor
+        # Read cuboid data in a 2D array
+        self.cuboids = np.loadtxt(self.cuboid_data, ndmin=2)
+        self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
 
