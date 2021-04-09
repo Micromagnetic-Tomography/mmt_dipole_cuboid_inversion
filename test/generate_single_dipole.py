@@ -40,7 +40,7 @@ def dipole_Bz(dip_r, dip_m, pos_r, Bz_grid):
             res = f + g
 
 
-            Bz_grid[j, i] += np.sum(res)
+            Bz_grid[j, i] = np.sum(res)
 
     return None
 
@@ -60,15 +60,16 @@ Bz_grid = np.zeros((res, res))
 # Put a dipole at the middle of the sample
 # Save this single dipole at different depths:
 
-dipole_depth = 30
-for dipole_depth in [8, 10, 20, 30, 40]:
+# dipole_depth = 30
+for dipole_depth in [6, 8, 10, 12, 14, 16, 20, 30, 40, 60]:
 
     dipole_pos = np.array([[Lx * 0.5, Ly * 0.5, -dipole_depth]]) * 1e-6
     Ms = 4.8e5
     vols = np.array([1 * 1 * 1.]) * 1e-18
     dipole_mus = Ms * vols[:, np.newaxis] * np.array([[0., 1., 0.]])
+    # Bzgrid is rewritten with this function
     dipole_Bz(dipole_pos, dipole_mus, scan_grid_coords, Bz_grid)
-    np.savetxt(f'single_dipole_depth_{dipole_depth}_Bzgrid.txt',
+    np.savetxt(f'single_dipole_depth_{dipole_depth:02d}_Bzgrid.txt',
                Bz_grid, fmt='%.18e')
 
     # f, ax = plt.subplots()
@@ -82,6 +83,6 @@ for dipole_depth in [8, 10, 20, 30, 40]:
         """
         )
 
-    with open('single_dipole_depth_{dipole_depth}_cuboids.txt', 'w') as cf:
+    with open(f'single_dipole_depth_{dipole_depth:02d}_cuboids.txt', 'w') as cf:
         cf.write(cuboid_file)
 
