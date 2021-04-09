@@ -85,4 +85,3 @@ for dipole_depth in [6, 8, 10, 12, 14, 16, 20, 30, 40, 60]:
 
     with open(f'single_dipole_depth_{dipole_depth:02d}_cuboids.txt', 'w') as cf:
         cf.write(cuboid_file)
-
