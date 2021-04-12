@@ -5,7 +5,52 @@ import scipy.linalg as spl
 from .cython_lib import pop_matrix_lib    # the cython populate_matrix function
 from typing import Literal  # Working with Python >3.8
 from typing import Union    # Working with Python >3.8
-import os
+# import os
+
+
+def loadtxt_iter(txtfile, delimiter=None, skiprows=0, dtype=np.float64):
+    """Reads a simply formatted text file using Numpy's `fromiter` function.
+    This function should perform faster than the `loadtxt` function.
+
+    Parameters
+    ----------
+    txtfile
+        Path to text file
+    delimiter
+        Passed to `split(delimiter=)` in every line of the text file.
+        `None` means any number of white spaces
+    skiprows
+    dtype
+
+    Notes
+    -----
+    Based on N. Schlomer function at:
+
+    https://stackoverflow.com/questions/18259393/numpy-loading-csv-too-slow-compared-to-matlab
+
+    and J. Kington at
+
+    https://stackoverflow.com/questions/8956832/python-out-of-memory-on-large-csv-file-numpy
+    """
+
+    def iter_func():
+        with open(txtfile, 'r') as infile:
+            for _ in range(skiprows):
+                next(infile)
+            for line in infile:
+                # Might not be necessary to strip characters at start and end:
+                line = line.strip().split(delimiter)
+                # line = line.split(delimiter)
+                # As a general solution we can also use regex:
+                # re.split(" +", line)
+                for item in line:
+                    yield dtype(item)
+        loadtxt_iter.rowlength = len(line)
+
+    data = np.fromiter(iter_func(), dtype=dtype).flatten()
+    data = data.reshape((-1, loadtxt_iter.rowlength))
+
+    return data
 
 
 @nb.jit(nopython=True)
@@ -215,7 +260,10 @@ class Dipole(object):
 
     def read_files(self,
                    cuboid_scaling_factor: float = 1e-6,
-                   tol: float = 1e-7):
+                   tol: float = 1e-7,
+                   qdm_matrix_reader_kwargs={},
+                   cuboids_reader_kwargs={}
+                   ):
         """ Reads in QDM_data and cuboid_data. This function also corrects the
         limits of the QDM_domain attribute according to the size of the QDM
         data matrix.
@@ -226,9 +274,17 @@ class Dipole(object):
             Scaling factor for the cuboid positions and lengths
         tol
             Tolerance for checking QDM_domain. Default is 1e-7
+        qdm_matrix_reader_kwargs
+            Extra arguments to the reader of the QDm file, e.g. `delimiter=','`
+        cuboids_reader_kwargs
+            Extra arguments to the reader of cuboid files, e.g. `skiprows=2`
         """
 
-        self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
+        # self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
+        # Use a faster reader, assuming the QDM file is separated by
+        # white spaces or another delimiter specified by reader_kwargs
+        self.QDM_matrix = loadtxt_iter(self.QDM_data, **qdm_matrix_reader_kwargs)
+        np.multiply(self.QDM_matrix, self.QDM_area, out=self.QDM_matrix)
 
         # ---------------------------------------------------------------------
         # Set the limits of the QDM domain
@@ -253,7 +309,9 @@ class Dipole(object):
         # ---------------------------------------------------------------------
 
         # Read cuboid data in a 2D array
-        self.cuboids = np.loadtxt(self.cuboid_data, ndmin=2)
+        # self.cuboids = np.loadtxt(self.cuboid_data, ndmin=2)
+        # We are assuming here that cuboid file does not have comments
+        self.cuboids = loadtxt_iter(self.cuboid_data, **cuboids_reader_kwargs)
         self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
