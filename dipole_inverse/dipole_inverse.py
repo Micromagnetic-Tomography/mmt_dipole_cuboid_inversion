@@ -5,6 +5,7 @@ import scipy.linalg as spl
 from .cython_lib import pop_matrix_lib    # the cython populate_matrix function
 from typing import Literal  # Working with Python >3.8
 from typing import Union    # Working with Python >3.8
+from typing import Tuple    # Working with Python >3.8
 # import os
 
 
@@ -368,7 +369,9 @@ class Dipole(object):
 
     def calculate_inverse(self,
                           method: _MethodOps = 'scipy_pinv',
-                          **method_kwargs):
+                          return_pinv_and_cnumber: Union[str, None] = None,
+                          **method_kwargs
+                          ) -> Union[Tuple[np.ndarray, np.ndarray], None]:
         """
         Calculates the inverse and computes the magnetization.  The solution is
         generated in the self.Mag variable
@@ -380,9 +383,21 @@ class Dipole(object):
             least squares method. The options available are:
 
             scipy_lapack    :: Uses scipy lapack wrappers for dgetrs and dgetrf
+                               to compute M by solving the matrix least squares
+                               problem: G^t * G * M = G^t * phi_QDM
             scipy_pinv      :: Least squares method
             scipy_pinv2     :: SVD method
             numpy_pinv      :: SVD method
+        return_pinv_and_cnumber
+            Optionally, return both the pseudo-inverse matrix and the condition
+            number of the forward matrix. The cond number is defined as the
+            product of the matrix norms of the forward matrix and its pseudo
+            inverse: |Q| * |Q^†|. Accordingly, this parameter is passed as a
+            string denoting the kind of matrix `norm` to be used, which is
+            determined by the `ord` parameter in `numpy.linalg.norm`. For
+            instance, return_pinv_and_cnumber='fro'. Notice that the condition
+            number will be determined by the cutoff value for the singular
+            values of the forward matrix.
 
         Notes
         -----
@@ -412,12 +427,17 @@ class Dipole(object):
                 print(SUCC_MSG)
 
             elif method == 'scipy_lapack':
-                GtG = np.matmul(self.Forward_G.transpose,
+                # Solve G^t * phi = G^t * G * M
+                # where: M -> magnetization ; phi -> QDM measurements (1D arr)
+                # 1. Get LU decomp for G^t * G
+                # 2. Solve the linear equation using the LU dcomp as required
+                #    by the dgesrs solver
+                GtG = np.matmul(self.Forward_G.T,
                                 self.Forward_G)
                 GtG_shuffle, IPIV, INFO1 = spl.lapack.dgetrf(GtG)
                 if INFO1 == 0:
-                    print(SUCC_MSG)
-                    GtQDM = np.matmul(self.Forward_G, QDM_flatten)
+                    print('LU decomposition of G * G^t succeeded')
+                    GtQDM = np.matmul(self.Forward_G.T, QDM_flatten)
                     self.Mag, INFO2 = spl.lapack.dgetrs(GtG_shuffle, IPIV, GtQDM)
                     if INFO2 != 0:
                         self.Mag = None
@@ -434,6 +454,14 @@ class Dipole(object):
             print(f'Problem is underdetermined with '
                   f'{self.Forward_G.shape[0]} knowns and '
                   f'{self.Forward_G.shape[1]} unknowns')
+
+        if return_pinv_and_cnumber:
+            Q_norm = np.linalg.norm(self.Forward_G, ord='fro')
+            Qd_norm = np.linalg.norm(Inverse_G, ord='fro')
+            cond_number = Q_norm * Qd_norm
+            return Inverse_G, cond_number
+        else:
+            return None
 
     def obtain_magnetization(self,
                              verbose: bool = True,
