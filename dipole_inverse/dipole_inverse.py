@@ -373,7 +373,7 @@ class Dipole(object):
                           stdfile: str = None,
                           ncovarfile: str = None,
                           resofile: str = None,
-                          return_pinv_and_cnumber: Union[str, None] = None,
+                          return_pinv_and_cnumber: Union[str, None, int, float] = False,
                           **method_kwargs
                           ) -> Union[Tuple[np.ndarray, np.ndarray], None]:
         """
@@ -471,7 +471,7 @@ class Dipole(object):
         if sigma is not None:
             covar = sigma**2 * np.matmul(Inverse_G, Inverse_G.transpose())
             if stdfile is not None:
-                np.savetxt(sigmafile, np.sqrt(np.diag(covar)).reshape(self.Npart, 3))
+                np.savetxt(stdfile, np.sqrt(np.diag(covar)).reshape(self.Npart, 3))
             if ncovarfile is not None:
                 normcovar = covar.copy()
                 for row in range(covar.shape[0]):
@@ -481,12 +481,8 @@ class Dipole(object):
             if resofile is not None:
                 np.savetxt(resofile, np.matmul(Inverse_G, self.Forward_G))
 
-        if return_pinv_and_cnumber:
-            Q_norm = np.linalg.norm(self.Forward_G,
-                                    ord=return_pinv_and_cnumber)
-            Qd_norm = np.linalg.norm(Inverse_G,
-                                     ord=return_pinv_and_cnumber)
-            cond_number = Q_norm * Qd_norm
+        if return_pinv_and_cnumber is not False:
+            cond_number = np.linalg.cond(self.Forward_G, p=return_pinv_and_cnumber)
             return Inverse_G, cond_number
         else:
             return None
