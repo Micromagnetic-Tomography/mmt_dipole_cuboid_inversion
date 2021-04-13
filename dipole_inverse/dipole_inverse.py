@@ -456,8 +456,9 @@ class Dipole(object):
                   f'{self.Forward_G.shape[1]} unknowns')
 
         if return_pinv_and_cnumber:
-            Q_norm = np.linalg.norm(self.Forward_G, ord='fro')
-            Qd_norm = np.linalg.norm(Inverse_G, ord='fro')
+            Q_norm = np.linalg.norm(self.Forward_G,
+                                    ord=return_pinv_and_cnumber)
+            Qd_norm = np.linalg.norm(Inverse_G, ord=return_pinv_and_cnumber)
             cond_number = Q_norm * Qd_norm
             return Inverse_G, cond_number
         else:
