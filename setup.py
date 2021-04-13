@@ -37,13 +37,16 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     ext_modules=cythonize(extensions),
     install_requires=['matplotlib',
-                      'numpy',
-                      'scipy',
-                      'numba',
+                      'numpy>=1.20',
+                      'scipy>=1.6',
+                      'numba>=0.51',
                       'descartes',
                       'pathlib',
-                      'shapely'
+                      'shapely',
+                      # The following is a dependency in a private repository:
+                      'grain_geometry_tools @ git+ssh://git@github.com/Micromagnetic-Tomography/grain_geometry_tools'
                       ],
+
     # TODO: Update license
     classifiers=['License :: BSD2 License',
                  'Programming Language :: Python :: 3 :: Only',
