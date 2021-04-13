@@ -369,12 +369,17 @@ class Dipole(object):
 
     def calculate_inverse(self,
                           method: _MethodOps = 'scipy_pinv',
+                          sigma: float = None,
+                          stdfile: str = None,
+                          ncovarfile: str = None,
+                          resofile: str = None,
                           return_pinv_and_cnumber: Union[str, None] = None,
                           **method_kwargs
                           ) -> Union[Tuple[np.ndarray, np.ndarray], None]:
         """
         Calculates the inverse and computes the magnetization.  The solution is
-        generated in the self.Mag variable
+        generated in the self.Mag variable. Optionally, the covariance matrix can
+        be established.
 
         Parameters
         ----------
@@ -388,6 +393,14 @@ class Dipole(object):
             scipy_pinv      :: Least squares method
             scipy_pinv2     :: SVD method
             numpy_pinv      :: SVD method
+        sigma
+            The standard deviation of the error of the magnetic field
+        stdfile
+            Location to where the standard deviation is written
+        ncovarfile
+            Location to where the normalized covariance matrix is written
+        resofile
+            Location to where the resolution matrix is written
         return_pinv_and_cnumber
             Optionally, return both the pseudo-inverse matrix and the condition
             number of the forward matrix. The cond number is defined as the
@@ -455,6 +468,8 @@ class Dipole(object):
                   f'{self.Forward_G.shape[0]} knowns and '
                   f'{self.Forward_G.shape[1]} unknowns')
 
+        if sigma is not None and stdfile is not None:
+            
         if return_pinv_and_cnumber:
             Q_norm = np.linalg.norm(self.Forward_G, ord='fro')
             Qd_norm = np.linalg.norm(Inverse_G, ord='fro')
