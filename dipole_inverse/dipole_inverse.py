@@ -539,7 +539,7 @@ class Dipole(object):
         np.savetxt(Magfile, data)
         np.savetxt(keyfile, p_idxs)
 
-    def forward_field(self, filepath, snrfile=None, tol=0.9):
+    def forward_field(self, filepath, sigma=None, snrfile=None, tol=0.9):
 
         """ Calculates the forward field and signal to noise ratio and saves
         them (SNR saving is optional)
@@ -548,15 +548,24 @@ class Dipole(object):
         ----------
         filepath
             Path to file to save the forward field
+        sigma
+            Standard deviation of Gaussian noise to be added in T
         snrfile
             If specified, saves the SNR
         tol
             Stands for percentage of signal used (0.9 is 90% default)
         """
 
-        Forward_field = np.matmul(self.Forward_G, self.Mag)  # flux field
-        np.savetxt(filepath, Forward_field.reshape(self.Ny, self.Nx)
-                   / self.QDM_area)
+        Forward_field = np.matmul(self.Forward_G, self.Mag) / self.QDM_area  # mag field
+
+        if sigma is not None:  # add Gaussian noise to the forward field
+            error = np.random.normal(0, sigma, len(Forward_field))
+            self.sigma = sigma * 4 * self.dx * self.dy  # originally it is a flux
+            error = error.reshape(len(error), 1)
+            Forward_field = Forward_field + error
+
+        np.savetxt(filepath, Forward_field.reshape(self.Ny, self.Nx))
+
         if snrfile is not None:
             org_field = self.QDM_matrix.flatten()  # flux field
             residual = org_field - Forward_field
