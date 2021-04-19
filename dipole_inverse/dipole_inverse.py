@@ -560,7 +560,7 @@ class Dipole(object):
 
         if sigma is not None:  # add Gaussian noise to the forward field
             error = np.random.normal(0, sigma, len(Forward_field))
-            self.sigma = sigma * 4 * self.dx * self.dy  # originally it is a flux
+            self.sigma = sigma * 4 * self.QDM_deltax * self.QDM_deltay  # originally it is a flux
             error = error.reshape(len(error), 1)
             Forward_field = Forward_field + error
 
