@@ -557,13 +557,10 @@ class Dipole(object):
         """
 
         Forward_field = np.matmul(self.Forward_G, self.Mag) / self.QDM_area  # mag field
-
         if sigma is not None:  # add Gaussian noise to the forward field
             error = np.random.normal(0, sigma, len(Forward_field))
             self.sigma = sigma * 4 * self.QDM_deltax * self.QDM_deltay  # originally it is a flux
-            error = error.reshape(len(error), 1)
             Forward_field = Forward_field + error
-
         np.savetxt(filepath, Forward_field.reshape(self.Ny, self.Nx))
 
         if snrfile is not None:
