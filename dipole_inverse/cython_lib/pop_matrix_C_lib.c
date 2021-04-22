@@ -16,13 +16,15 @@ coordinates. If cuboids are shifted, Origin is False.
 */
 
 // G matrix     -> 1D array that comes from the Python array: (N_parts, Nx * Ny)
-//                 So it;s the transposed version of original G 
+//                 So it;s the transposed version of original G
 // QDM_domain   -> array with 4 entries x1 y1 x2 y2
 // cuboids      -> N_part * 6 array
 void populate_matrix_C(double * G,
                        double * QDM_domain, double scan_height,
-                       double * cuboids, int N_cuboids, int Npart,
-                       int Ny, int Nx, double QDM_spacing,
+                       double * cuboids,
+                       unsigned long long N_cuboids, unsigned long long Npart,
+                       unsigned long long Ny, unsigned long long Nx,
+                       double QDM_spacing,
                        double QDM_deltax, double QDM_deltay,
                        int Origin, int verbose
                        ) {
@@ -40,24 +42,24 @@ void populate_matrix_C(double * G,
         zeta0 = (-1) * scan_height;
     }
 
-    int i_cuboid = 0;
-    int i_cuboid_old = 0;
-    int i_particle_prev = (int) cuboids[6];
-    int i_particle = i_particle_prev;
- 
+    unsigned long long i_cuboid = 0;
+    unsigned long long i_cuboid_old = 0;
+    unsigned long long i_particle_prev = (int) cuboids[6];
+    unsigned long long i_particle = i_particle_prev;
+
     // If grains are not numbered in order this always works
     int i_particle_0_N = 0;
 
     while (i_cuboid < N_cuboids) {
         if(verbose == 1) {
-            printf("Particle = %d   Cuboid = %d\n", i_particle, i_cuboid);
+            printf("Particle = %lld   Cuboid = %lld\n", i_particle, i_cuboid);
         }
         i_cuboid_old = i_cuboid;
 
         // Loop over sensor measurements. Each sensor is in the xy
         // plane and has area delta^2
         #pragma omp parallel for lastprivate(i_cuboid, i_particle) shared(i_cuboid_old, i_particle_prev)
-        for (int n = 0; n < Nx * Ny; n++) {
+        for (unsigned long long n = 0; n < Nx * Ny; n++) {
 
             // Definitions
             double x, y, z, x2, y2, z2, sign, r2, r, Az, Lx, Ly, F120, F210, F22m;
@@ -68,8 +70,8 @@ void populate_matrix_C(double * G,
             double cuboid_size[3]   = {0};
 
             // Set scan positions in x and y direction
-            int i = n % Nx;
-            int j = n / Nx;
+            unsigned long long i = n % Nx;
+            unsigned long long j = n / Nx;
 
             double sensor_pos[3] = {0};
             sensor_pos[2] = zeta0;
@@ -80,7 +82,7 @@ void populate_matrix_C(double * G,
             for (int k = 0; k < 3; k++) particle_flux[k] = 0.0;
 
             // Start from the index of the particle being analysed
-            i_particle = (int) cuboids[7 * i_cuboid_old + 6];
+            i_particle = (unsigned long long) cuboids[7 * i_cuboid_old + 6];
             i_cuboid = i_cuboid_old;
 
             // While the cuboid has particle index of the
@@ -115,7 +117,7 @@ void populate_matrix_C(double * G,
                                         Ly = log(y + r);
                                     } else {
                                         Lx = Ly = 0.0;
-                                        printf("Error at p = %d", i_particle);
+                                        printf("Error at p = %lld", i_particle);
                                     }
 
                                     F120 = 0.5 * ((y2 - z2) * Lx - r * x) - y * (z * Az - x * Ly);
@@ -139,7 +141,7 @@ void populate_matrix_C(double * G,
                     particle_flux[k] += -Cm * get_flux[k];
                 }
                 i_cuboid += 1;
-                i_particle = (int) cuboids[7 * i_cuboid + 6];
+                i_particle = (unsigned long long) cuboids[7 * i_cuboid + 6];
 
             }  // end while cuboids in i_particle
 
