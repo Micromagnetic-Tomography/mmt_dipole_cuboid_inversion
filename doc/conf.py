@@ -27,9 +27,11 @@ author = 'David Cortés-Ortuño, Frenk Out, Martha Kosters, Karl Fabian, Lennart
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',   # autodocument functions
-              'sphinx.ext.napoleon',  # to convert Numpy docstring into reST
-              'sphinx.ext.mathjax',
+extensions = ['sphinx.ext.autodoc',      # autodocument functions
+              'sphinx.ext.napoleon',     # to convert Numpy docstring into reST
+              'sphinx.ext.mathjax',      # for math strings
+              'sphinx.ext.autosummary',
+              'nbsphinx',                # render notebooks 
 ]
 
 

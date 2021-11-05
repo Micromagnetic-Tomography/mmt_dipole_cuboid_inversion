@@ -4,15 +4,15 @@ Dipole Inverse
 Submodules
 ----------
 
-dipole\_inverse.dipole\_inverse module
---------------------------------------
+``dipole_inverse.dipole_inverse`` module
+----------------------------------------
 
 .. automodule:: dipole_inverse.dipole_inverse
    :members:
    :undoc-members:
 
-dipole\_inverse.plot\_tools module
-----------------------------------
+``dipole_inverse.plot_tools`` module
+------------------------------------
 
 .. automodule:: dipole_inverse.plot_tools
    :members:
