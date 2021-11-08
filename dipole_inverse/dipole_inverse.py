@@ -189,8 +189,8 @@ def populate_matrix_numba(G, QDM_domain, scan_height, cuboids, Npart,
 class Dipole(object):
 
     def __init__(self,
-                 QDM_data: str,
-                 cuboid_data: str,
+#                  QDM_data: str,
+#                  cuboid_data: str,
                  QDM_domain: np.ndarray,
                  QDM_spacing: float,
                  QDM_deltax: float,
@@ -205,11 +205,6 @@ class Dipole(object):
 
         Parameters
         ----------
-        QDM_data
-            Matrixfile (Nx columns, Ny rows) containing the QDM/scan data in T
-        cuboid_data
-            File (x, y, z, dx, dy, dz, index) containing location and size
-            grains in microm
         QDM_domain
             (2x2 numpy matrix) : Size (metres) of the QDM domain as
              np.array([[x1, y1], [x2, y2]])
@@ -249,8 +244,8 @@ class Dipole(object):
 
         """
 
-        self.QDM_data = Path(QDM_data)
-        self.cuboid_data = Path(cuboid_data)
+#         self.QDM_data = Path(QDM_data)
+#         self.cuboid_data = Path(cuboid_data)
         self.QDM_domain = QDM_domain
         self.QDM_spacing = QDM_spacing
         self.QDM_deltax = QDM_deltax
@@ -260,6 +255,8 @@ class Dipole(object):
         self.scan_height = scan_height
 
     def read_files(self,
+                   QDM_data: str or np.ndarray or np.matrix,
+                   cuboid_data: str or np.ndarray or np.matrix,
                    cuboid_scaling_factor: float = 1e-6,
                    tol: float = 1e-7,
                    qdm_matrix_reader_kwargs={},
@@ -271,6 +268,12 @@ class Dipole(object):
 
         Parameters
         ----------
+        QDM_data
+            Matrixfile, np.ndarray or np.matrix (Nx columns, Ny rows) containing
+            the QDM/scan data in T
+        cuboid_data
+            File, np.ndarray, or np.matrix (x, y, z, dx, dy, dz, index) containing
+            location and size grains in microm
         cuboid_scaling_factor
             Scaling factor for the cuboid positions and lengths
         tol
@@ -280,13 +283,19 @@ class Dipole(object):
         cuboids_reader_kwargs
             Extra arguments to the reader of cuboid files, e.g. `skiprows=2`
         """
-
-        # self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
-        # Use a faster reader, assuming the QDM file is separated by
-        # white spaces or another delimiter specified by reader_kwargs
-        self.QDM_matrix = loadtxt_iter(self.QDM_data, **qdm_matrix_reader_kwargs)
+        if isinstance(QDM_data, str):
+            # self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
+            # Use a faster reader, assuming the QDM file is separated by
+            # white spaces or another delimiter specified by reader_kwargs
+            self.QDM_matrix = loadtxt_iter(QDM_data, **qdm_matrix_reader_kwargs)
+            
+        elif isinstance(QDM_data, np.ndarray) or isinstance(QDM_data, np.matrix):
+            self.QDM_matrix = QDM_data
+            
+        else:
+            raise TypeError(f'Type {type(QDM_data)} is not recognized',
+                            'try str, np.ndarray or np.matrix')
         np.multiply(self.QDM_matrix, self.QDM_area, out=self.QDM_matrix)
-
         # ---------------------------------------------------------------------
         # Set the limits of the QDM domain
 
@@ -296,13 +305,11 @@ class Dipole(object):
             print(f'QDM_domain[1, 0] has been reset from '
                   f'{self.QDM_domain[1, 0]} to {new_domain}.')
             self.QDM_domain[1, 0] = new_domain
-
         new_domain = self.QDM_domain[0, 1] + (self.Ny - 1) * self.QDM_spacing
         if abs(new_domain - self.QDM_domain[1, 1]) > tol:
             print(f'QDM_domain[1, 1] has been reset from '
                   f'{self.QDM_domain[1, 1]} to {new_domain}.')
             self.QDM_domain[1, 1] = new_domain
-
         if abs(self.QDM_deltax * self.QDM_deltay * 4 - self.QDM_area) > tol**2:
             print('The sensor is not a rectangle. '
                   'Calculation will probably go wrong here!')
@@ -310,9 +317,15 @@ class Dipole(object):
         # ---------------------------------------------------------------------
 
         # Read cuboid data in a 2D array
-        # self.cuboids = np.loadtxt(self.cuboid_data, ndmin=2)
-        # We are assuming here that cuboid file does not have comments
-        self.cuboids = loadtxt_iter(self.cuboid_data, **cuboids_reader_kwargs)
+        if isinstance(cuboid_data, str):
+            # self.cuboids = np.loadtxt(self.cuboid_data, ndmin=2)
+            # We are assuming here that cuboid file does not have comments
+            self.cuboids = loadtxt_iter(self.cuboid_data, **cuboids_reader_kwargs)
+        elif isinstance(cuboid_data, np.ndarray) or isinstance(cuboid_data, np.matrix):
+            self.cuboids = cuboid_data
+        else:
+            raise TypeError(f'Type {type(cuboid_data)} is not recognized',
+                            'try str, np.ndarray or np.matrix')
         self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
