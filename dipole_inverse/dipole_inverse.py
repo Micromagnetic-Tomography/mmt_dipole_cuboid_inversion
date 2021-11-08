@@ -189,8 +189,6 @@ def populate_matrix_numba(G, QDM_domain, scan_height, cuboids, Npart,
 class Dipole(object):
 
     def __init__(self,
-#                  QDM_data: str,
-#                  cuboid_data: str,
                  QDM_domain: np.ndarray,
                  QDM_spacing: float,
                  QDM_deltax: float,
@@ -244,8 +242,6 @@ class Dipole(object):
 
         """
 
-#         self.QDM_data = Path(QDM_data)
-#         self.cuboid_data = Path(cuboid_data)
         self.QDM_domain = QDM_domain
         self.QDM_spacing = QDM_spacing
         self.QDM_deltax = QDM_deltax
@@ -501,6 +497,8 @@ class Dipole(object):
             return None
 
     def obtain_magnetization(self,
+                             QDM_data,
+                             cuboid_data,
                              verbose: bool = True,
                              method_populate: _PrepMatOps = 'cython',
                              method_inverse: _MethodOps = 'scipy_pinv',
@@ -519,7 +517,7 @@ class Dipole(object):
             parameters
         """
 
-        self.read_files()
+        self.read_files(QDM_data, cuboid_data)
         self.prepare_matrix(method=method_populate, verbose=verbose)
         self.calculate_inverse(method=method_inverse,
                                **method_inverse_kwargs)
@@ -552,7 +550,7 @@ class Dipole(object):
         np.savetxt(Magfile, data)
         np.savetxt(keyfile, p_idxs)
 
-    def forward_field(self, filepath, sigma=None, snrfile=None, tol=0.9):
+    def forward_field(self, filepath=None, sigma=None, snrfile=None, tol=0.9):
 
         """ Calculates the forward field and signal to noise ratio and saves
         them (SNR saving is optional)
@@ -574,7 +572,10 @@ class Dipole(object):
             error = np.random.normal(0, sigma, len(Forward_field))
             self.sigma = sigma * 4 * self.QDM_deltax * self.QDM_deltay  # originally it is a flux
             Forward_field = Forward_field + error
-        np.savetxt(filepath, Forward_field.reshape(self.Ny, self.Nx))
+        if filepath is not None:
+            np.savetxt(filepath, Forward_field.reshape(self.Ny, self.Nx))
+        else:
+            return Forward_field.reshape(self.Ny, self.Nx)
 
         if snrfile is not None:
             org_field = self.QDM_matrix.flatten()  # flux field
