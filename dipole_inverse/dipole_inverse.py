@@ -496,9 +496,55 @@ class Dipole(object):
         else:
             return None
 
+    def calculate_forward(self,
+                          cuboid_data: np.ndarray or np.matrix,
+                          dip_mag: np.ndarray or np.matrix,
+                          sigma: float = None,
+                          filepath: str = None):
+        """
+        A shortcut method to compute the forward magnetic field based on
+        the position and magnetization of the grains.
+        
+        Parameters
+        ----------
+        cuboid_data
+            np.ndarray or np.matrix (x, y, z, dx, dy, dz, index) containing
+            location and half size grains in microm
+        dip_mag
+            np.ndarray or np.matrix containing the magnetization per grain
+            in x, y, and z-direction. Shape: number of grains x 3
+        sigma
+            Standard deviation of Gaussian noise to be added in T
+        filepath
+            Optional path to file to save the forward field
+
+        Returns
+        -------
+        Forward_field
+            Optionally return forward magnetic field if no filepath
+            is inputted
+        """
+        self.Mag = dip_mag.flatten()
+        self.cuboids = cuboid_data
+
+        self.Npart = len(np.unique(self.cuboids[:, 6]))
+        self.Ncub = len(self.cuboids[:, 6])
+        self.Nx = int(
+            (self.QDM_domain[1, 0] - self.QDM_domain[0, 0]) / self.QDM_spacing) + 1
+        self.Ny = int(
+            (self.QDM_domain[1, 1] - self.QDM_domain[0, 1]) / self.QDM_spacing) + 1
+
+        # Start the methods
+        self.prepare_matrix()
+        if filepath is not None:
+            self.forward_field(forward_field, sigma=sigma)
+        else:
+            Forward_field = self.forward_field(sigma=sigma)
+            return Forward_field
+
     def obtain_magnetization(self,
-                             QDM_data,
-                             cuboid_data,
+                             QDM_data: str or np.ndarray or np.matrix,
+                             cuboid_data: str or np.ndarray or np.matrix,
                              verbose: bool = True,
                              method_populate: _PrepMatOps = 'cython',
                              method_inverse: _MethodOps = 'scipy_pinv',
@@ -509,6 +555,12 @@ class Dipole(object):
 
         Parameters
         ----------
+        QDM_data
+            Matrixfile, np.ndarray or np.matrix (Nx columns, Ny rows) containing
+            the QDM/scan data in T
+        cuboid_data
+            File, np.ndarray, or np.matrix (x, y, z, dx, dy, dz, index) containing
+            location and size grains in microm
         method_populate
             Method to populate the forward matrix
         method_inverse
@@ -524,16 +576,17 @@ class Dipole(object):
 
     def save_results(self,
                      Magfile: str,
-                     keyfile: str,
-                     path_to_plot: str = None,
-                     colormap: str = 'coolwarm'):
+                     keyfile: str):
         """
         Saves the magnetization to a specified Magfile file and the keys of the
         index of the particles in the keyfile file.
-
-        (to be removed)
-        An optional plot is produced if path_to_plot (string) is set.
-        colormap default set at coolwarm
+        
+        Parameters
+        ----------
+        Magfile
+            Path to file to save the magnetization
+        keyfile
+            Path to file to save the identification (key) of all grains
         """
 
         # WARNING: the old version did not save the indexes as 1st column:
@@ -550,21 +603,24 @@ class Dipole(object):
         np.savetxt(Magfile, data)
         np.savetxt(keyfile, p_idxs)
 
-    def forward_field(self, filepath=None, sigma=None, snrfile=None, tol=0.9):
+    def forward_field(self,
+                      filepath: str = None,
+                      sigma: float = None):
 
-        """ Calculates the forward field and signal to noise ratio and saves
-        them (SNR saving is optional)
+        """ Calculates the forward field
 
         Parameters
         ----------
         filepath
-            Path to file to save the forward field
+            Optional path to file to save the forward field
         sigma
             Standard deviation of Gaussian noise to be added in T
-        snrfile
-            If specified, saves the SNR
-        tol
-            Stands for percentage of signal used (0.9 is 90% default)
+
+        Returns
+        -------
+        Forward_field
+            Optionally return forward magnetic field if no filepath
+            is inputted
         """
 
         Forward_field = np.matmul(self.Forward_G, self.Mag) / self.QDM_area  # mag field
@@ -576,27 +632,3 @@ class Dipole(object):
             np.savetxt(filepath, Forward_field.reshape(self.Ny, self.Nx))
         else:
             return Forward_field.reshape(self.Ny, self.Nx)
-
-        if snrfile is not None:
-            org_field = self.QDM_matrix.flatten()  # flux field
-            residual = org_field - Forward_field
-            snr = np.zeros(self.Forward_G.shape[1])
-            el_signal = np.zeros((self.Forward_G.shape[0], 2))
-            for column in range(self.Forward_G.shape[1]):
-                el_signal[:, 0] = self.Forward_G[:, column] * self.Mag[column]
-                el_signal[:, 1] = residual
-                el_sum = np.sqrt(np.sum((el_signal[:, 0])**2))
-                el_signal = el_signal[np.argsort(abs(el_signal[:, 0]))]
-                res2_sum = 0
-                forw2_sum = 0
-#                 forw_sum = 0
-                for item in range(1, len(el_signal[:, 0]) + 1):
-                    res2_sum += el_signal[-item, 1]**2
-                    forw2_sum += el_signal[-item, 0]**2
-#                     forw_sum += abs(el_signal[-item, 0])
-                    if np.sqrt(forw2_sum) / el_sum > tol:
-                        res2_sum = np.sqrt(res2_sum)
-                        forw2_sum = np.sqrt(forw2_sum)
-                        snr[column] = forw2_sum / res2_sum
-                        break
-            np.savetxt(snrfile, snr)
