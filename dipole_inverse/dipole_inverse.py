@@ -499,7 +499,7 @@ class Dipole(object):
     def calculate_forward(self,
                           cuboid_data: np.ndarray or np.matrix,
                           dip_mag: np.ndarray or np.matrix,
-                          cuboid_scaling_factor: float
+                          cuboid_scaling_factor: float,
                           sigma: float = None,
                           filepath: str = None):
         """
