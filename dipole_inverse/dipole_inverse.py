@@ -253,7 +253,7 @@ class Dipole(object):
     def read_files(self,
                    QDM_data: str or np.ndarray or np.matrix,
                    cuboid_data: str or np.ndarray or np.matrix,
-                   cuboid_scaling_factor: float = 1e-6,
+                   cuboid_scaling_factor: float,
                    tol: float = 1e-7,
                    qdm_matrix_reader_kwargs={},
                    cuboids_reader_kwargs={}
@@ -286,7 +286,7 @@ class Dipole(object):
             self.QDM_matrix = loadtxt_iter(QDM_data, **qdm_matrix_reader_kwargs)
             
         elif isinstance(QDM_data, np.ndarray) or isinstance(QDM_data, np.matrix):
-            self.QDM_matrix = QDM_data
+            self.QDM_matrix = np.copy(QDM_data)
             
         else:
             raise TypeError(f'Type {type(QDM_data)} is not recognized',
@@ -318,7 +318,7 @@ class Dipole(object):
             # We are assuming here that cuboid file does not have comments
             self.cuboids = loadtxt_iter(self.cuboid_data, **cuboids_reader_kwargs)
         elif isinstance(cuboid_data, np.ndarray) or isinstance(cuboid_data, np.matrix):
-            self.cuboids = cuboid_data
+            self.cuboids = np.copy(cuboid_data)
         else:
             raise TypeError(f'Type {type(cuboid_data)} is not recognized',
                             'try str, np.ndarray or np.matrix')
@@ -499,9 +499,9 @@ class Dipole(object):
     def calculate_forward(self,
                           cuboid_data: np.ndarray or np.matrix,
                           dip_mag: np.ndarray or np.matrix,
+                          cuboid_scaling_factor: float
                           sigma: float = None,
-                          filepath: str = None,
-                          cuboid_scaling_factor: float = 1e-6):
+                          filepath: str = None):
         """
         A shortcut method to compute the forward magnetic field based on
         the position and magnetization of the grains.
@@ -514,12 +514,12 @@ class Dipole(object):
         dip_mag
             np.ndarray or np.matrix containing the magnetization per grain
             in x, y, and z-direction. Shape: number of grains x 3
+        cuboid_scaling_factor
+            Scaling factor for the cuboid positions and lengths
         sigma
             Standard deviation of Gaussian noise to be added in T
         filepath
             Optional path to file to save the forward field
-        cuboid_scaling_factor
-            Scaling factor for the cuboid positions and lengths
 
         Returns
         -------
@@ -528,7 +528,7 @@ class Dipole(object):
             is inputted
         """
         self.Mag = dip_mag.flatten()
-        self.cuboids = cuboid_data
+        self.cuboids = np.copy(cuboid_data)
         self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor 
 
         self.Npart = len(np.unique(self.cuboids[:, 6]))
