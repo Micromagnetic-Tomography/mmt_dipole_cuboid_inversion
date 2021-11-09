@@ -500,7 +500,8 @@ class Dipole(object):
                           cuboid_data: np.ndarray or np.matrix,
                           dip_mag: np.ndarray or np.matrix,
                           sigma: float = None,
-                          filepath: str = None):
+                          filepath: str = None,
+                          cuboid_scaling_factor: float = 1e-6):
         """
         A shortcut method to compute the forward magnetic field based on
         the position and magnetization of the grains.
@@ -517,6 +518,8 @@ class Dipole(object):
             Standard deviation of Gaussian noise to be added in T
         filepath
             Optional path to file to save the forward field
+        cuboid_scaling_factor
+            Scaling factor for the cuboid positions and lengths
 
         Returns
         -------
@@ -526,6 +529,7 @@ class Dipole(object):
         """
         self.Mag = dip_mag.flatten()
         self.cuboids = cuboid_data
+        self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor 
 
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
