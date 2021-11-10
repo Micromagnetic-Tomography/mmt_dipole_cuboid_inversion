@@ -338,8 +338,8 @@ class Dipole(object):
             Populating the matrix can be done using either 'numba' or 'cython'
             optimisation.
             The cython function is parallelized with OpenMP thus the number of
-            threads is specified from the OMP_NUM_THREADS system variable. This
-            can be limited using set_max_num_threads in the tools module
+            threads is specified from the `OMP_NUM_THREADS` system variable.
+            This can be limited using set_max_num_threads in the tools module
         """
 
         if method == 'cython':
@@ -376,7 +376,7 @@ class Dipole(object):
                           return_pinv_and_cnumber: Union[str, None, int, float] = False,
                           **method_kwargs
                           ) -> Union[Tuple[np.ndarray, np.ndarray], None]:
-        """
+        r"""
         Calculates the inverse and computes the magnetization.  The solution is
         generated in the self.Mag variable. Optionally, the covariance matrix can
         be established.
@@ -387,12 +387,13 @@ class Dipole(object):
             The numerical inversion can be done using the SVD algorithms or the
             least squares method. The options available are:
 
-            scipy_lapack    :: Uses scipy lapack wrappers for dgetrs and dgetrf
-                               to compute M by solving the matrix least squares
-                               problem: G^t * G * M = G^t * phi_QDM
-            scipy_pinv      :: Least squares method
-            scipy_pinv2     :: SVD method
-            numpy_pinv      :: SVD method
+                * scipy_lapack    :: Uses scipy lapack wrappers for dgetrs and
+                                   dgetrf to compute :math:`\mathbf{M}` by
+                                   solving the matrix least squares problem:
+                                   :math:`Gᵀ * G * M = Gᵀ * ϕ_{QDM}`
+                * scipy_pinv      :: Least squares method
+                * scipy_pinv2     :: SVD method
+                * numpy_pinv      :: SVD method
         sigma
             The standard deviation of the error of the magnetic field
         stdfile
@@ -405,19 +406,18 @@ class Dipole(object):
             Optionally, return both the pseudo-inverse matrix and the condition
             number of the forward matrix. The cond number is defined as the
             product of the matrix norms of the forward matrix and its pseudo
-            inverse: |Q| * |Q^†|. Accordingly, this parameter is passed as a
-            string denoting the kind of matrix `norm` to be used, which is
-            determined by the `ord` parameter in `numpy.linalg.norm`. For
-            instance, return_pinv_and_cnumber='fro'. Notice that the condition
-            number will be determined by the cutoff value for the singular
-            values of the forward matrix.
+            inverse: :math:`|Q| * |Q^\dagger|`. Accordingly, this parameter is
+            passed as a string denoting the kind of matrix `norm` to be used,
+            which is determined by the `ord` parameter in `numpy.linalg.norm`.
+            For instance, return_pinv_and_cnumber='fro'. Notice that the
+            condition number will be determined by the cutoff value for the
+            singular values of the forward matrix.
 
         Notes
         -----
-        Additional keyword arguments are passed to the solver, e.g.
+        Additional keyword arguments are passed to the solver, e.g::
 
             calculate_inverse(method='numpy_pinv', rcond=1e-15)
-
         """
         SUCC_MSG = 'Inversion has been carried out'
 

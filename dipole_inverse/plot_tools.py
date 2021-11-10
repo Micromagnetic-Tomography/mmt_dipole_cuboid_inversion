@@ -13,6 +13,7 @@ def set_grain_geometries(DipoleIns,
     Generates multiple arrays with grain geometry properties and generates them
     as variables in the DipoleIns instance. Run this function before performing
     any plotting.
+
     The variables generated are:
 
         cuboid_idxs
@@ -66,8 +67,8 @@ def plot_grain_boundaries(DipoleIns, ax,
     Plots the grain boundaries viewed from a bird eye perspective at the
     z-axis
 
-    Note
-    ----
+    Notes
+    -----
     Requires set_grain_geometries to be applied to DipoleIns beforehand
 
     Parameters
@@ -119,8 +120,8 @@ def plot_magnetization_on_grains(DipoleIns,
     """
     Plots the magnetization of grains with colorscale on a Matplotlib axis
 
-    Note
-    ----
+    Notes
+    -----
     Requires set_grain_geometries to be applied to DipoleIns beforehand
 
     Parameters
