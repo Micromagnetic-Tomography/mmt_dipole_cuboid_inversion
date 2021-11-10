@@ -373,7 +373,7 @@ class Dipole(object):
                           stdfile: str = None,
                           ncovarfile: str = None,
                           resofile: str = None,
-                          return_pinv_and_cnumber: Union[str, None, int, float] = False,
+                          return_pinv_and_cnumber: Literal[None, 1, -1, 2, -2, 'inf', '-inf', 'fro'] = None,
                           **method_kwargs
                           ) -> Union[Tuple[np.ndarray, np.ndarray], None]:
         r"""
@@ -409,9 +409,10 @@ class Dipole(object):
             inverse: :math:`|Q| * |Q^\dagger|`. Accordingly, this parameter is
             passed as a string denoting the kind of matrix `norm` to be used,
             which is determined by the `ord` parameter in `numpy.linalg.norm`.
-            For instance, return_pinv_and_cnumber='fro'. Notice that the
-            condition number will be determined by the cutoff value for the
-            singular values of the forward matrix.
+            For instance, return_pinv_and_cnumber='fro'. The Numpy's `inf`
+            values in this case are replaced by strings and `None` is not
+            accepted. Notice that the condition number will be determined by
+            the cutoff value for the singular values of the forward matrix.
 
         Notes
         -----
@@ -481,8 +482,12 @@ class Dipole(object):
             if resofile is not None:
                 np.savetxt(resofile, np.matmul(Inverse_G, self.Forward_G))
 
-        if return_pinv_and_cnumber is not False:
-            cond_number = np.linalg.cond(self.Forward_G, p=return_pinv_and_cnumber)
+        if return_pinv_and_cnumber is not None:
+            if return_pinv_and_cnumber in('inf', '-inf'):
+                norm_order = np.inf if return_pinv_and_cnumber == 'inf' else -np.inf
+            else:
+                norm_order = return_pinv_and_cnumber
+            cond_number = np.linalg.cond(self.Forward_G, p=norm_order)
             return Inverse_G, cond_number
         else:
             return None
