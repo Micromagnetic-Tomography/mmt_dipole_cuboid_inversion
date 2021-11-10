@@ -369,12 +369,17 @@ class Dipole(object):
 
     def calculate_inverse(self,
                           method: _MethodOps = 'scipy_pinv',
-                          return_pinv_and_cnumber: Union[str, None] = None,
+                          sigma: float = None,
+                          stdfile: str = None,
+                          ncovarfile: str = None,
+                          resofile: str = None,
+                          return_pinv_and_cnumber: Union[str, None, int, float] = False,
                           **method_kwargs
                           ) -> Union[Tuple[np.ndarray, np.ndarray], None]:
         r"""
         Calculates the inverse and computes the magnetization.  The solution is
-        generated in the self.Mag variable
+        generated in the self.Mag variable. Optionally, the covariance matrix can
+        be established.
 
         Parameters
         ----------
@@ -389,6 +394,14 @@ class Dipole(object):
                 * scipy_pinv      :: Least squares method
                 * scipy_pinv2     :: SVD method
                 * numpy_pinv      :: SVD method
+        sigma
+            The standard deviation of the error of the magnetic field
+        stdfile
+            Location to where the standard deviation is written
+        ncovarfile
+            Location to where the normalized covariance matrix is written
+        resofile
+            Location to where the resolution matrix is written
         return_pinv_and_cnumber
             Optionally, return both the pseudo-inverse matrix and the condition
             number of the forward matrix. The cond number is defined as the
@@ -455,11 +468,21 @@ class Dipole(object):
                   f'{self.Forward_G.shape[0]} knowns and '
                   f'{self.Forward_G.shape[1]} unknowns')
 
-        if return_pinv_and_cnumber:
-            Q_norm = np.linalg.norm(self.Forward_G,
-                                    ord=return_pinv_and_cnumber)
-            Qd_norm = np.linalg.norm(Inverse_G, ord=return_pinv_and_cnumber)
-            cond_number = Q_norm * Qd_norm
+        if sigma is not None:
+            covar = sigma**2 * np.matmul(Inverse_G, Inverse_G.transpose())
+            if stdfile is not None:
+                np.savetxt(stdfile, np.sqrt(np.diag(covar)).reshape(self.Npart, 3))
+            if ncovarfile is not None:
+                normcovar = covar.copy()
+                for row in range(covar.shape[0]):
+                    for column in range(covar.shape[1]):
+                        normcovar[row, column] = covar[row, column] / np.sqrt(covar[row, row] * covar[column, column])
+                np.savetxt(ncovarfile, normcovar)
+            if resofile is not None:
+                np.savetxt(resofile, np.matmul(Inverse_G, self.Forward_G))
+
+        if return_pinv_and_cnumber is not False:
+            cond_number = np.linalg.cond(self.Forward_G, p=return_pinv_and_cnumber)
             return Inverse_G, cond_number
         else:
             return None
@@ -516,7 +539,7 @@ class Dipole(object):
         np.savetxt(Magfile, data)
         np.savetxt(keyfile, p_idxs)
 
-    def forward_field(self, filepath, snrfile=None, tol=0.9):
+    def forward_field(self, filepath, sigma=None, snrfile=None, tol=0.9):
 
         """ Calculates the forward field and signal to noise ratio and saves
         them (SNR saving is optional)
@@ -525,15 +548,21 @@ class Dipole(object):
         ----------
         filepath
             Path to file to save the forward field
+        sigma
+            Standard deviation of Gaussian noise to be added in T
         snrfile
             If specified, saves the SNR
         tol
             Stands for percentage of signal used (0.9 is 90% default)
         """
 
-        Forward_field = np.matmul(self.Forward_G, self.Mag)  # flux field
-        np.savetxt(filepath, Forward_field.reshape(self.Ny, self.Nx)
-                   / self.QDM_area)
+        Forward_field = np.matmul(self.Forward_G, self.Mag) / self.QDM_area  # mag field
+        if sigma is not None:  # add Gaussian noise to the forward field
+            error = np.random.normal(0, sigma, len(Forward_field))
+            self.sigma = sigma * 4 * self.QDM_deltax * self.QDM_deltay  # originally it is a flux
+            Forward_field = Forward_field + error
+        np.savetxt(filepath, Forward_field.reshape(self.Ny, self.Nx))
+
         if snrfile is not None:
             org_field = self.QDM_matrix.flatten()  # flux field
             residual = org_field - Forward_field
