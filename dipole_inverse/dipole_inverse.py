@@ -35,6 +35,7 @@ def loadtxt_iter(txtfile, delimiter=None, skiprows=0, dtype=np.float64):
     """
 
     def iter_func():
+        line = ''
         with open(txtfile, 'r') as infile:
             for _ in range(skiprows):
                 next(infile)
@@ -46,6 +47,8 @@ def loadtxt_iter(txtfile, delimiter=None, skiprows=0, dtype=np.float64):
                 # re.split(" +", line)
                 for item in line:
                     yield dtype(item)
+        if len(line) == 0:
+            raise Exception(f'Empty file: {txtfile}')
         loadtxt_iter.rowlength = len(line)
 
     data = np.fromiter(iter_func(), dtype=dtype).flatten()
@@ -259,6 +262,8 @@ class Dipole(object):
         self.sample_height = sample_height
         self.scan_height = scan_height
 
+        self.Inverse_G = None
+
     def read_files(self,
                    cuboid_scaling_factor: float = 1e-6,
                    tol: float = 1e-7,
@@ -284,7 +289,8 @@ class Dipole(object):
         # self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
         # Use a faster reader, assuming the QDM file is separated by
         # white spaces or another delimiter specified by reader_kwargs
-        self.QDM_matrix = loadtxt_iter(self.QDM_data, **qdm_matrix_reader_kwargs)
+        self.QDM_matrix = loadtxt_iter(self.QDM_data,
+                                       **qdm_matrix_reader_kwargs)
         np.multiply(self.QDM_matrix, self.QDM_area, out=self.QDM_matrix)
 
         # ---------------------------------------------------------------------
@@ -369,17 +375,13 @@ class Dipole(object):
 
     def calculate_inverse(self,
                           method: _MethodOps = 'scipy_pinv',
-                          sigma: float = None,
-                          stdfile: str = None,
-                          ncovarfile: str = None,
-                          resofile: str = None,
-                          return_pinv_and_cnumber: Literal[None, 1, -1, 2, -2, 'inf', '-inf', 'fro'] = None,
+                          store_inverse_G_matrix: bool = False,
                           **method_kwargs
-                          ) -> Union[Tuple[np.ndarray, np.ndarray], None]:
+                          ) -> None:
         r"""
-        Calculates the inverse and computes the magnetization.  The solution is
-        generated in the self.Mag variable. Optionally, the covariance matrix can
-        be established.
+        Calculates the inverse and computes the magnetization. The solution is
+        generated in the self.Mag variable. Optionally, the covariance matrix
+        can be established.
 
         Parameters
         ----------
@@ -394,25 +396,6 @@ class Dipole(object):
                 * scipy_pinv      :: Least squares method
                 * scipy_pinv2     :: SVD method
                 * numpy_pinv      :: SVD method
-        sigma
-            The standard deviation of the error of the magnetic field
-        stdfile
-            Location to where the standard deviation is written
-        ncovarfile
-            Location to where the normalized covariance matrix is written
-        resofile
-            Location to where the resolution matrix is written
-        return_pinv_and_cnumber
-            Optionally, return both the pseudo-inverse matrix and the condition
-            number of the forward matrix. The cond number is defined as the
-            product of the matrix norms of the forward matrix and its pseudo
-            inverse: :math:`|Q| * |Q^\dagger|`. Accordingly, this parameter is
-            passed as a string denoting the kind of matrix `norm` to be used,
-            which is determined by the `ord` parameter in `numpy.linalg.norm`.
-            For instance, return_pinv_and_cnumber='fro'. The Numpy's `inf`
-            values in this case are replaced by strings and `None` is not
-            accepted. Notice that the condition number will be determined by
-            the cutoff value for the singular values of the forward matrix.
 
         Notes
         -----
@@ -464,33 +447,108 @@ class Dipole(object):
 
             else:
                 print(f'Method {method} is not recognized')
+
+            if store_inverse_G_matrix:
+                if method == 'scipy_lapack':
+                    raise Exception('LAPACK method does not compute G inverse')
+                else:
+                    # Warning: Inverse_G might be an unbound variable:
+                    self.Inverse_G = Inverse_G
+
         else:
             print(f'Problem is underdetermined with '
                   f'{self.Forward_G.shape[0]} knowns and '
                   f'{self.Forward_G.shape[1]} unknowns')
 
-        if sigma is not None:
-            covar = sigma**2 * np.matmul(Inverse_G, Inverse_G.transpose())
-            if stdfile is not None:
-                np.savetxt(stdfile, np.sqrt(np.diag(covar)).reshape(self.Npart, 3))
-            if ncovarfile is not None:
-                normcovar = covar.copy()
-                for row in range(covar.shape[0]):
-                    for column in range(covar.shape[1]):
-                        normcovar[row, column] = covar[row, column] / np.sqrt(covar[row, row] * covar[column, column])
-                np.savetxt(ncovarfile, normcovar)
-            if resofile is not None:
-                np.savetxt(resofile, np.matmul(Inverse_G, self.Forward_G))
+        return None
 
-        if return_pinv_and_cnumber is not None:
-            if return_pinv_and_cnumber in('inf', '-inf'):
-                norm_order = np.inf if return_pinv_and_cnumber == 'inf' else -np.inf
-            else:
-                norm_order = return_pinv_and_cnumber
-            cond_number = np.linalg.cond(self.Forward_G, p=norm_order)
-            return Inverse_G, cond_number
-        else:
+    def calculate_covariance_matrix(self,
+                                    sigma: float,
+                                    std_dev_file: str = None,
+                                    norm_covar_file: str = None,
+                                    resol_matrix_file: str = None
+                                    ) -> Union[Tuple[np.ndarray,
+                                                     np.ndarray,
+                                                     np.ndarray],
+                                               None]:
+        r"""
+        Calculates the covariance matrix
+
+        Parameters
+        ----------
+        sigma
+            The standard deviation of the error of the magnetic field
+        std_dev_file
+            File path to where the standard deviation is written
+        norm_covar_file
+            File path to where the normalized covariance matrix is written
+        resol_matrix_file
+            File path to where the resolution matrix is written
+
+        Returns
+        -------
+        standard_deviation
+        normalized_covariance_matrix
+        resolution_matrix
+        """
+        if self.Inverse_G is None:
+            print('This method requires calling calculate_inverse with the '
+                  'store_inverse_G_matrix=True option. Stopping calculation.')
             return None
+
+        covar = (sigma ** 2) * (self.Inverse_G @ self.Inverse_G.transpose())
+
+        standard_deviation = np.sqrt(np.diag(covar)).reshape(self.Npart, 3)
+
+        normcovar = covar.copy()
+        for row in range(covar.shape[0]):
+            for column in range(covar.shape[1]):
+                normcovar[row, column] = covar[row, column]
+                normcovar[row, column] /= np.sqrt(covar[row, row] * covar[column, column])
+
+        resolution_matrix = self.Inverse_G @ self.Forward_G
+
+        if std_dev_file is not None:
+            np.savetxt(std_dev_file, standard_deviation)
+        if norm_covar_file is not None:
+            np.savetxt(norm_covar_file, normcovar)
+        if resol_matrix_file is not None:
+            np.savetxt(resol_matrix_file, resolution_matrix)
+
+        return (standard_deviation, normcovar, resolution_matrix)
+
+    _normOps = Literal[None, 1, -1, 2, -2, 'inf', '-inf', 'fro']
+
+    def calculate_condition_number(self,
+                                   matrix_norm: _normOps = None
+                                   ) -> Union[None, float]:
+        r"""
+        Returns the condition number of the forward matrix. The cond number is
+        defined as the product of the matrix norms of the forward matrix and
+        its pseudo inverse: :math:`|Q| * |Q^\dagger|`.
+
+        Parameters
+        ----------
+        matrix_norm
+            The kind of matrix `norm` to be used, which is determined by the
+            `ord` parameter in `numpy.linalg.norm`.  For instance,
+            return_pinv_and_cnumber='fro'.  The Numpy's `inf` values in this
+            case are replaced by strings. Notice that the condition number will
+            be determined by the cutoff value for the singular values of the
+            forward matrix.
+        """
+        if self.Inverse_G is None:
+            print('This method requires calling calculate_inverse with the '
+                  'store_inverse_G_matrix=True option. Stopping calculation.')
+            return None
+
+        if matrix_norm in ('inf', '-inf'):
+            norm_order = np.inf if matrix_norm == 'inf' else -np.inf
+        else:
+            norm_order = matrix_norm
+        cond_number = np.linalg.cond(self.Forward_G, p=norm_order)
+
+        return cond_number
 
     def obtain_magnetization(self,
                              verbose: bool = True,
