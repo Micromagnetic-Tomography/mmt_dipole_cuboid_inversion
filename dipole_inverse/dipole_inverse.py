@@ -3,9 +3,10 @@ import numba as nb
 from pathlib import Path
 import scipy.linalg as spl
 from .cython_lib import pop_matrix_lib    # the cython populate_matrix function
-from typing import Literal  # Working with Python >3.8
-from typing import Union    # Working with Python >3.8
-from typing import Tuple    # Working with Python >3.8
+from typing import Literal   # Working with Python >3.8
+from typing import Union     # Working with Python >3.8
+from typing import Tuple     # Working with Python >3.8
+from typing import Optional  # Working with Python >3.8
 # import os
 
 
@@ -390,9 +391,9 @@ class Dipole(object):
             least squares method. The options available are:
 
                 * scipy_lapack    :: Uses scipy lapack wrappers for dgetrs and
-                                   dgetrf to compute :math:`\mathbf{M}` by
-                                   solving the matrix least squares problem:
-                                   :math:`Gᵀ * G * M = Gᵀ * ϕ_{QDM}`
+                                     dgetrf to compute :math:`\mathbf{M}` by
+                                     solving the matrix least squares problem:
+                                     :math:`Gᵀ * G * M = Gᵀ * ϕ_{QDM}`
                 * scipy_pinv      :: Least squares method
                 * scipy_pinv2     :: SVD method
                 * numpy_pinv      :: SVD method
@@ -467,10 +468,9 @@ class Dipole(object):
                                     std_dev_file: str = None,
                                     norm_covar_file: str = None,
                                     resol_matrix_file: str = None
-                                    ) -> Union[Tuple[np.ndarray,
-                                                     np.ndarray,
-                                                     np.ndarray],
-                                               None]:
+                                    ) -> Optional[Tuple[np.ndarray,
+                                                        np.ndarray,
+                                                        np.ndarray]]:
         r"""
         Calculates the covariance matrix
 
@@ -577,8 +577,7 @@ class Dipole(object):
     def save_results(self,
                      Magfile: str,
                      keyfile: str,
-                     path_to_plot: str = None,
-                     colormap: str = 'coolwarm'):
+                     ):
         """
         Saves the magnetization to a specified Magfile file and the keys of the
         index of the particles in the keyfile file.
@@ -602,50 +601,88 @@ class Dipole(object):
         np.savetxt(Magfile, data)
         np.savetxt(keyfile, p_idxs)
 
-    def forward_field(self, filepath, sigma=None, snrfile=None, tol=0.9):
+    def calculate_forward_field(self,
+                                sigma: Union[None, float] = None,
+                                forward_field_file: Optional[str] = None,
+                                snr_file: Optional[str] = None,
+                                tol: float = 0.9
+                                ) -> Union[Tuple[np.ndarray, np.ndarray],
+                                           np.ndarray]:
 
-        """ Calculates the forward field and signal to noise ratio and saves
-        them (SNR saving is optional)
+        """
+        Calculates the forward field and signal to noise ratio (SNR) and
+        optionally saves them. If a standard deviation value is passed a
+        Gaussian noise is estimated and added to the field.
+
+        TODO: This method requires documentation on the calculations
 
         Parameters
         ----------
-        filepath
-            Path to file to save the forward field
         sigma
-            Standard deviation of Gaussian noise to be added in T
-        snrfile
-            If specified, saves the SNR
+            Standard deviation of Gaussian noise to be added in T. When
+            specified this value is converted to a flux quantity and stored in
+            the self.sigma variable
+        forward_field_file
+            Path to file to save the forward field
+        snr_file
+            Optional file path to calculate and save the SNR
         tol
             Stands for percentage of signal used (0.9 is 90% default)
         """
+        # Approxim Magnetic field from the inversion
+        Forward_field = np.matmul(self.Forward_G, self.Mag) / self.QDM_area
 
-        Forward_field = np.matmul(self.Forward_G, self.Mag) / self.QDM_area  # mag field
         if sigma is not None:  # add Gaussian noise to the forward field
             error = np.random.normal(0, sigma, len(Forward_field))
-            self.sigma = sigma * 4 * self.QDM_deltax * self.QDM_deltay  # originally it is a flux
+            # originally it is a flux
+            self.sigma = sigma * 4 * self.QDM_deltax * self.QDM_deltay
             Forward_field = Forward_field + error
-        np.savetxt(filepath, Forward_field.reshape(self.Ny, self.Nx))
 
-        if snrfile is not None:
+        if forward_field_file is not None:
+            np.savetxt(forward_field_file,
+                       Forward_field.reshape(self.Ny, self.Nx))
+
+        # TODO: the calculation of the SNR should be moved to a different
+        #       function
+        if snr_file is not None:
+
             org_field = self.QDM_matrix.flatten()  # flux field
             residual = org_field - Forward_field
+            # One SNR per mx, my, mz of every particle:
             snr = np.zeros(self.Forward_G.shape[1])
             el_signal = np.zeros((self.Forward_G.shape[0], 2))
+
             for column in range(self.Forward_G.shape[1]):
+                # This has the contribution of Mx, My OR Mz of every cuboid,
+                # to the magnetic signal:
                 el_signal[:, 0] = self.Forward_G[:, column] * self.Mag[column]
+                # Second column has the residual:
                 el_signal[:, 1] = residual
+
+                # Total Eucliden norm of the contribution of M_i of grain j
                 el_sum = np.sqrt(np.sum((el_signal[:, 0])**2))
-                el_signal = el_signal[np.argsort(abs(el_signal[:, 0]))]
+
+                # Sort signals by their strength (absolute) value
+                # Sorting is inverted to start from the strongest signals
+                sort_idxs = np.argsort(np.abs(el_signal[:, 0]))[::-1]
+                el_signal = el_signal[sort_idxs]
+
+                # Start summing the
                 res2_sum = 0
                 forw2_sum = 0
 #                 forw_sum = 0
-                for item in range(1, len(el_signal[:, 0]) + 1):
-                    res2_sum += el_signal[-item, 1]**2
-                    forw2_sum += el_signal[-item, 0]**2
+                for item in range(len(el_signal[:, 0])):
+                    res2_sum += el_signal[item, 1] ** 2
+                    forw2_sum += el_signal[item, 0] ** 2
 #                     forw_sum += abs(el_signal[-item, 0])
                     if np.sqrt(forw2_sum) / el_sum > tol:
                         res2_sum = np.sqrt(res2_sum)
                         forw2_sum = np.sqrt(forw2_sum)
                         snr[column] = forw2_sum / res2_sum
                         break
-            np.savetxt(snrfile, snr)
+
+            np.savetxt(snr_file, snr)
+
+            return (Forward_field, snr)
+
+        return Forward_field
