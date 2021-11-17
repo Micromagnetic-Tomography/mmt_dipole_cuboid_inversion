@@ -405,7 +405,6 @@ class Dipole(object):
             calculate_inverse(method='numpy_pinv', rcond=1e-15)
         """
         SUCC_MSG = 'Inversion has been carried out'
-
         QDM_flatten = self.QDM_matrix.flatten()
         if self.Forward_G.shape[0] >= self.Forward_G.shape[1]:
             print(f'Start inversion with {self.Forward_G.shape[0]} '
@@ -413,7 +412,7 @@ class Dipole(object):
             # probably there is a more efficient way to write these options
             if method == 'scipy_pinv':
                 Inverse_G = spl.pinv(self.Forward_G, **method_kwargs)
-                self.Mag = np.matmul(Inverse_G, QDM_flatten)
+                self.Mag = np.matmul(Inverse_G, QDM_flatten)  # type: ignore
                 print(SUCC_MSG)
             elif method == 'scipy_pinv2':
                 Inverse_G = spl.pinv2(self.Forward_G, **method_kwargs)
@@ -462,93 +461,6 @@ class Dipole(object):
                   f'{self.Forward_G.shape[1]} unknowns')
 
         return None
-
-    def calculate_covariance_matrix(self,
-                                    sigma: float,
-                                    std_dev_file: str = None,
-                                    norm_covar_file: str = None,
-                                    resol_matrix_file: str = None
-                                    ) -> Optional[Tuple[np.ndarray,
-                                                        np.ndarray,
-                                                        np.ndarray]]:
-        r"""
-        Calculates the covariance matrix
-
-        Parameters
-        ----------
-        sigma
-            The standard deviation of the error of the magnetic field
-        std_dev_file
-            File path to where the standard deviation is written
-        norm_covar_file
-            File path to where the normalized covariance matrix is written
-        resol_matrix_file
-            File path to where the resolution matrix is written
-
-        Returns
-        -------
-        standard_deviation
-        normalized_covariance_matrix
-        resolution_matrix
-        """
-        if self.Inverse_G is None:
-            print('This method requires calling calculate_inverse with the '
-                  'store_inverse_G_matrix=True option. Stopping calculation.')
-            return None
-
-        covar = (sigma ** 2) * (self.Inverse_G @ self.Inverse_G.transpose())
-
-        standard_deviation = np.sqrt(np.diag(covar)).reshape(self.Npart, 3)
-
-        normcovar = covar.copy()
-        for row in range(covar.shape[0]):
-            for column in range(covar.shape[1]):
-                normcovar[row, column] = covar[row, column]
-                normcovar[row, column] /= np.sqrt(covar[row, row] * covar[column, column])
-
-        resolution_matrix = self.Inverse_G @ self.Forward_G
-
-        if std_dev_file is not None:
-            np.savetxt(std_dev_file, standard_deviation)
-        if norm_covar_file is not None:
-            np.savetxt(norm_covar_file, normcovar)
-        if resol_matrix_file is not None:
-            np.savetxt(resol_matrix_file, resolution_matrix)
-
-        return (standard_deviation, normcovar, resolution_matrix)
-
-    _normOps = Literal[None, 1, -1, 2, -2, 'inf', '-inf', 'fro']
-
-    def calculate_condition_number(self,
-                                   matrix_norm: _normOps = None
-                                   ) -> Union[None, float]:
-        r"""
-        Returns the condition number of the forward matrix. The cond number is
-        defined as the product of the matrix norms of the forward matrix and
-        its pseudo inverse: :math:`|Q| * |Q^\dagger|`.
-
-        Parameters
-        ----------
-        matrix_norm
-            The kind of matrix `norm` to be used, which is determined by the
-            `ord` parameter in `numpy.linalg.norm`.  For instance,
-            return_pinv_and_cnumber='fro'.  The Numpy's `inf` values in this
-            case are replaced by strings. Notice that the condition number will
-            be determined by the cutoff value for the singular values of the
-            forward matrix.
-        """
-        if self.Inverse_G is None:
-            print('This method requires calling calculate_inverse with the '
-                  'store_inverse_G_matrix=True option. Stopping calculation.')
-            return None
-
-        if matrix_norm in ('inf', '-inf'):
-            norm_order = np.inf if matrix_norm == 'inf' else -np.inf
-        else:
-            norm_order = matrix_norm
-        cond_number = np.linalg.cond(self.Forward_G, p=norm_order)
-
-        return cond_number
 
     def obtain_magnetization(self,
                              verbose: bool = True,
@@ -600,89 +512,3 @@ class Dipole(object):
 
         np.savetxt(Magfile, data)
         np.savetxt(keyfile, p_idxs)
-
-    def calculate_forward_field(self,
-                                sigma: Union[None, float] = None,
-                                forward_field_file: Optional[str] = None,
-                                snr_file: Optional[str] = None,
-                                tol: float = 0.9
-                                ) -> Union[Tuple[np.ndarray, np.ndarray],
-                                           np.ndarray]:
-
-        """
-        Calculates the forward field and signal to noise ratio (SNR) and
-        optionally saves them. If a standard deviation value is passed a
-        Gaussian noise is estimated and added to the field.
-
-        TODO: This method requires documentation on the calculations
-
-        Parameters
-        ----------
-        sigma
-            Standard deviation of Gaussian noise to be added in T. When
-            specified this value is converted to a flux quantity and stored in
-            the self.sigma variable
-        forward_field_file
-            Path to file to save the forward field
-        snr_file
-            Optional file path to calculate and save the SNR
-        tol
-            Stands for percentage of signal used (0.9 is 90% default)
-        """
-        # Approxim Magnetic field from the inversion
-        Forward_field = np.matmul(self.Forward_G, self.Mag) / self.QDM_area
-
-        if sigma is not None:  # add Gaussian noise to the forward field
-            error = np.random.normal(0, sigma, len(Forward_field))
-            # originally it is a flux
-            self.sigma = sigma * 4 * self.QDM_deltax * self.QDM_deltay
-            Forward_field = Forward_field + error
-
-        if forward_field_file is not None:
-            np.savetxt(forward_field_file,
-                       Forward_field.reshape(self.Ny, self.Nx))
-
-        # TODO: the calculation of the SNR should be moved to a different
-        #       function
-        if snr_file is not None:
-
-            org_field = self.QDM_matrix.flatten()  # flux field
-            residual = org_field - Forward_field
-            # One SNR per mx, my, mz of every particle:
-            snr = np.zeros(self.Forward_G.shape[1])
-            el_signal = np.zeros((self.Forward_G.shape[0], 2))
-
-            for column in range(self.Forward_G.shape[1]):
-                # This has the contribution of Mx, My OR Mz of every cuboid,
-                # to the magnetic signal:
-                el_signal[:, 0] = self.Forward_G[:, column] * self.Mag[column]
-                # Second column has the residual:
-                el_signal[:, 1] = residual
-
-                # Total Eucliden norm of the contribution of M_i of grain j
-                el_sum = np.sqrt(np.sum((el_signal[:, 0])**2))
-
-                # Sort signals by their strength (absolute) value
-                # Sorting is inverted to start from the strongest signals
-                sort_idxs = np.argsort(np.abs(el_signal[:, 0]))[::-1]
-                el_signal = el_signal[sort_idxs]
-
-                # Start summing the
-                res2_sum = 0
-                forw2_sum = 0
-#                 forw_sum = 0
-                for item in range(len(el_signal[:, 0])):
-                    res2_sum += el_signal[item, 1] ** 2
-                    forw2_sum += el_signal[item, 0] ** 2
-#                     forw_sum += abs(el_signal[-item, 0])
-                    if np.sqrt(forw2_sum) / el_sum > tol:
-                        res2_sum = np.sqrt(res2_sum)
-                        forw2_sum = np.sqrt(forw2_sum)
-                        snr[column] = forw2_sum / res2_sum
-                        break
-
-            np.savetxt(snr_file, snr)
-
-            return (Forward_field, snr)
-
-        return Forward_field
