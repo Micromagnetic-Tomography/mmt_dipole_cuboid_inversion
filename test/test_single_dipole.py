@@ -1,9 +1,9 @@
 from dipole_inverse_tools import set_max_num_threads
+set_max_num_threads(4)
 import numpy as np
 from pathlib import Path
 import time
 import matplotlib.pyplot as plt
-set_max_num_threads(4)
 import dipole_inverse as dpinv  # noqa: E402
 
 
@@ -41,9 +41,10 @@ def test_dipole_class():
     FG_copy = np.copy(dip_inversion.Forward_G)
 
     print('Comparing Cython pop matrix to Numba code')
-    dip_inversion.prepare_matrix(method='cython', verbose=True)
+    dip_inversion.prepare_matrix(method='cuda', verbose=True)
     for j, i in [(5, 1), (100, 0), (195, 2), (368, 1)]:
         assert abs(FG_copy[j, i] - dip_inversion.Forward_G[j, i]) < 1e-8
+    print(dip_inversion.Forward_G[j, i])
 
     dip_inversion.calculate_inverse(method='scipy_pinv2', rcond=1e-25)
 

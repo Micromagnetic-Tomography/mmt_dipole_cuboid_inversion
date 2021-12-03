@@ -18,6 +18,14 @@ extensions = [
               extra_link_args=link_args,
               include_dirs=[numpy.get_include()]
               ),
+    #
+    Extension("dipole_inverse.cython_cuda_lib.pop_matrix_cudalib",
+              ["dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx",
+               "dipole_inverse/cython_cuda_lib/pop_matrix_cuda_lib.c"],
+              extra_compile_args=com_args,
+              extra_link_args=link_args,
+              include_dirs=[numpy.get_include()]
+              ),
 ]
 
 # -----------------------------------------------------------------------------
