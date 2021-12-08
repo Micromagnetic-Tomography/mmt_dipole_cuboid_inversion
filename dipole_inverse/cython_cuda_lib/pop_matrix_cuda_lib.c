@@ -34,7 +34,7 @@ coordinates. If cuboids are shifted, Origin is False.
 //                 So it;s the transposed version of original G
 // QDM_domain   -> array with 4 entries x1 y1 x2 y2
 // cuboids      -> N_part * 6 array
-void populate_matrix_cuda(double * G,
+void populate_matrix_cuda(double ** G,
                           double * QDM_domain, double scan_height,
                           double * cuboids,
                           unsigned long long N_cuboids, unsigned long long Npart,
@@ -172,10 +172,9 @@ void populate_matrix_cuda(double * G,
             // printf("Part 0 N: %lld\n", i_particle_0_N);
             // printf("i_cuboid: %lld\n", i_cuboid);
             // printf("N_cuboids: %lld\n", N_cuboids);
-            G[Nx * Ny * (3 * i_particle_0_N    ) + i + Nx * j] = particle_flux[0];
-            G[Nx * Ny * (3 * i_particle_0_N + 1) + i + Nx * j] = particle_flux[1];
-            G[Nx * Ny * (3 * i_particle_0_N + 2) + i + Nx * j] = particle_flux[2];
-            // DO NOT forget to transpose G after calling this function!
+            G[i + j * Nx][3 * i_particle_0_N    ] = particle_flux[0];
+            G[i + j * Nx][3 * i_particle_0_N + 1] = particle_flux[1];
+            G[i + j * Nx][3 * i_particle_0_N + 2] = particle_flux[2];
             //
             // OLD CODE:
             // ------Populate G matrix column wise
