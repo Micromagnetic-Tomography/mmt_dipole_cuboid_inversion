@@ -132,8 +132,10 @@ extensions = [
               # the implementation of this trick is in customize_compiler() below
               # For nvcc we use the Turing architecture: sm_75
               # See: https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+              # FMAD (floating-point multiply-add): turning off helps for numerical precission (useful
+              #                                     for graphics) but this might slightly affect performance
               extra_compile_args={'gcc': com_args,
-                                  'nvcc': ['-arch=sm_75', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
+                                  'nvcc': ['-arch=sm_75', '--fmad=false', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
               include_dirs = [numpy.get_include(), CUDA['include'], '.'],
               library_dirs=[CUDA['lib64']],
               runtime_library_dirs=[CUDA['lib64']]
