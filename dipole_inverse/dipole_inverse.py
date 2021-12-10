@@ -3,7 +3,10 @@ import numba as nb
 from pathlib import Path
 import scipy.linalg as spl
 from .cython_lib import pop_matrix_lib   # the cython populate_matrix function
-from .cython_cuda_lib import pop_matrix_cudalib   # the cuda populate_matrix function
+try:
+    from .cython_cuda_lib import pop_matrix_cudalib   # the cuda populate_matrix function
+except:
+    pass
 from typing import Literal   # Working with Python >3.8
 from typing import Union     # Working with Python >3.8
 from typing import Tuple     # Working with Python >3.8
@@ -350,29 +353,24 @@ class Dipole(object):
             This can be limited using set_max_num_threads in the tools module
         """
 
+        self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
         if method == 'cython':
-            # The Cython function populates the matrix row-wise, thus we
-            # must transpose it after populating
-            self.Forward_G = np.zeros((3 * self.Npart, self.Nx * self.Ny))
+            # The Cython function populates the matrix column-wise via a 1D arr
             pop_matrix_lib.populate_matrix_cython(
                 self.Forward_G, self.QDM_domain[0], self.scan_height,
                 np.ravel(self.cuboids), self.Ncub,
                 self.Npart, self.Ny, self.Nx,
                 self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
                 Origin, int(verbose))
-            self.Forward_G = self.Forward_G.T
 
         if method == 'cuda':
-            # The cuda function populates the matrix row-wise, thus we
-            # must transpose it after populating
-            self.Forward_G = np.zeros((3 * self.Npart, self.Nx * self.Ny))
+            self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
             pop_matrix_cudalib.populate_matrix_cython(
                 self.Forward_G, self.QDM_domain[0], self.scan_height,
                 np.ravel(self.cuboids), self.Ncub,
                 self.Npart, self.Ny, self.Nx,
                 self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
                 Origin, int(verbose))
-            self.Forward_G = self.Forward_G.T
 
         elif method == 'numba':
             self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
