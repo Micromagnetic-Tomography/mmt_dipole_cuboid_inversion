@@ -1,4 +1,4 @@
-void populate_matrix_cuda(double ** G,
+void populate_matrix_cuda(double * G,
                           double * QDM_domain, double scan_height,
                           double * cuboids, 
                           unsigned long long N_cuboids, unsigned long long Npart,

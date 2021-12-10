@@ -6,9 +6,12 @@
 
 __global__ void pop_matrix_nv(double * G, double * cuboids, 
                               unsigned long long N_cuboids, 
-                              unsigned long long Nx, unsigned long long Ny,
-                              double QDM_deltax, double QDM_deltay, 
-                              double xi0, double eta0, double zeta0) {
+                              unsigned long long Nx, unsigned long long Ny, unsigned long long Npart,
+                              double QDM_deltax, double QDM_deltay, double QDM_spacing,
+                              double xi0, double eta0, double zeta0,
+                              int verbose) {
+
+    double Cm = 1e-7;
 
     // The thread's unique number 
     int idx_x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -25,19 +28,13 @@ __global__ void pop_matrix_nv(double * G, double * cuboids,
 
         printf("Glob Thread: %i \n", globThread);
 
-        for(int i = idx; i < size; i += stride) {
-            res[i] = a[i] + b[i];
-        }
-        // printf("Stop\n");
-        
-
         // Loop over sensor measurements. Each sensor is in the xy
         // plane and has area delta^2
         // #pragma omp parallel for lastprivate(i_cuboid, i_particle) shared(i_cuboid_old, i_particle_prev)
         // for (unsigned long long n = 0; n < Nx * Ny; n++) {
 
         unsigned long long i_cuboid;
-        unsigned long long i_cuboid_old;
+        // unsigned long long i_cuboid_old;
         unsigned long long i_particle_prev;
         unsigned long long i_particle;
 
@@ -45,8 +42,8 @@ __global__ void pop_matrix_nv(double * G, double * cuboids,
         int i_particle_0_N = 0;
 
         // Set scan positions in x and y direction
-        unsigned long long i = n % Nx;
-        unsigned long long j = n / Nx;
+        // unsigned long long i = n % Nx;
+        // unsigned long long j = n / Nx;
 
         // Definitions
         double x, y, z, x2, y2, z2, sign, r2, r, Az, Lx, Ly, F120, F210, F22m;
@@ -62,14 +59,14 @@ __global__ void pop_matrix_nv(double * G, double * cuboids,
         sensor_pos[0] = xi0 + QDM_spacing * sx;
 
         i_cuboid = 0;
-        i_cuboid_old = 0;
+        // i_cuboid_old = 0;
         i_particle_prev = (int) cuboids[6];
         i_particle = i_particle_prev;
         i_particle_0_N = 0;
 
         while (i_cuboid < N_cuboids) {
             if(verbose == 1) {
-                printf("Particle = %lld   Cuboid = %lld i %lld j %lld\n", i_particle, i_cuboid, i, j);
+                printf("Particle = %lld   Cuboid = %lld i %lld j %lld\n", i_particle, i_cuboid, sx, sy);
             }
             // i_cuboid_old = i_cuboid;
 
@@ -194,7 +191,6 @@ void populate_matrix_cuda(double * G,
                           int Origin, int verbose
                           ) {
 
-    double Cm = 1e-7;
 
     double xi0, eta0, zeta0;
     if (Origin == 1) {
@@ -207,10 +203,17 @@ void populate_matrix_cuda(double * G,
         zeta0 = (-1) * scan_height;
     }
 
-    
+    const unsigned int G_bytes = sizeof(double) * Nx * Ny * 3 * Npart;
+    const unsigned int cuboids_bytes = sizeof(double) * Ncuboids;
+
     // Manual mem allocation:
     double *G_dev;
-    cudaMalloc((void**)&G_dev, sizeof(double) * Nx * Ny);
+    CUDA_ASSERT(cudaMalloc((void**)&G_dev, G_bytes));
+
+    double *cuboids_dev;
+    CUDA_ASSERT(cudaMalloc((void**)&cuboids_dev, cuboids_bytes));
+    // Copy cuboids array from the host to the GPU
+    cudaMemcpy(cuboids_dev, cuboids, cuboids_bytes, cudaMemcpyHostToDevice);
 
     // Launch kernel
     // int size     = matrix_size;
@@ -222,8 +225,14 @@ void populate_matrix_cuda(double * G,
     dim3 grid(n_blocks_x, n_blocks_y);
     dim3 block(n_threads, n_threads);
 
-    pop_matrix_nv<<<grid, block>>>(** G_dev, double * cuboids_dev, 
-                                   N_cuboids, Nx, Ny, QDM_deltax, QDM_deltay, 
-                                   xi0, eta0, zeta0);
+    pop_matrix_nv<<<grid, block>>>(G_dev, cuboids_dev, 
+                                   N_cuboids, Nx, Ny, Npart,
+                                   QDM_deltax, QDM_deltay, QDM_spacing,
+                                   xi0, eta0, zeta0, verbose);
+
+    // Copy G from the GPU to the host
+    cudaMemcpy(G, G_dev, G_bytes, cudaMemcpyDeviceToHost);
+
+    cudaFree(G_dev);
 
 } // main function
