@@ -5,6 +5,8 @@ from Cython.Distutils import build_ext
 # cython and python dependency is handled by pyproject.toml
 from Cython.Build import cythonize
 import numpy
+import os
+from os.path import join as pjoin
 
 # -----------------------------------------------------------------------------
 # CUDA SPECIFIC FUNCTIONS
@@ -106,7 +108,7 @@ extensions = [
     Extension("dipole_inverse.cython_lib.pop_matrix_lib",
               ["dipole_inverse/cython_lib/pop_matrix_lib.pyx",
                "dipole_inverse/cython_lib/pop_matrix_C_lib.c"],
-              extra_compile_args=com_args,
+              extra_compile_args={'gcc': com_args},
               extra_link_args=link_args,
               include_dirs=[numpy.get_include()]
               ),
@@ -142,20 +144,6 @@ extensions = [
 
 with open('README.md') as f:
     long_description = f.read()
-
-setup(name='hellocython',
-      # random metadata. there's more you can supploy
-      author='DC',
-      version='0.1',
-
-      ext_modules = [ext],
-      # ext_modules = cythonize(ext),
-
-      # inject our custom trigger
-      cmdclass={'build_ext': custom_build_ext},
-
-      # since the package has c code, the egg cannot be zipped
-      zip_safe=False)
 
 setuptools.setup(
     # setup_requires=['cython'],  # not working (see the link at top)

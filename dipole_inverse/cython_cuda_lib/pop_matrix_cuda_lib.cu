@@ -1,7 +1,6 @@
 #include "pop_matrix_cuda_lib.h"
 #include <math.h>
 #include <stdio.h>
-#include <omp.h>
 
 
 __global__ void pop_matrix_nv(double * G, double * cuboids, 
@@ -23,15 +22,14 @@ __global__ void pop_matrix_nv(double * G, double * cuboids,
     int globThread = threadsInBlock * (gridDim.x * blockIdx.y + blockIdx.x)
                      + (blockDim.x * threadIdx.y + threadIdx.x);
 
+
+    // Loop over sensor measurements. Each sensor is in the xy plane and has area delta^2
     for (unsigned long long sy = idx_y; sy < Ny; sy += stride_y) {
         for (unsigned long long sx = idx_x; sx < Nx; sx += stride_x) {
 
-            printf("Glob Thread: %i \n", globThread);
-
-            // Loop over sensor measurements. Each sensor is in the xy
-            // plane and has area delta^2
-            // #pragma omp parallel for lastprivate(i_cuboid, i_particle) shared(i_cuboid_old, i_particle_prev)
-            // for (unsigned long long n = 0; n < Nx * Ny; n++) {
+            // if (sy == idx_y && sx == idx_x) { 
+            //     printf("GlobThread : %d sx %ld sy %ld\n", globThread, sx, sy);
+            // }
 
             unsigned long long i_cuboid;
             // unsigned long long i_cuboid_old;
@@ -129,32 +127,23 @@ __global__ void pop_matrix_nv(double * G, double * cuboids,
                     // and continue with the next sensor measurement
 
                     // scale flux measurement:
-                    for (int k = 0; k < 3; k++) {
-                        particle_flux[k] += -Cm * get_flux[k];
-                    }
+                    for (int k = 0; k < 3; k++) particle_flux[k] += -Cm * get_flux[k];
                     i_cuboid += 1;
                     i_particle = (unsigned long long) cuboids[7 * i_cuboid + 6];
 
                 }  // end while cuboids in i_particle
 
-                // printf("%d %d", i + j * Nx, 3 * i_particle_prev);
-                // Trying to populate G row wise:
                 // printf("Pop: %lld\n", Nx * Ny * (3 * i_particle_0_N    ) + i + Nx * j);
                 // printf("Part 0 N: %lld\n", i_particle_0_N);
-                // printf("i_cuboid: %lld\n", i_cuboid);
-                // printf("N_cuboids: %lld\n", N_cuboids);
                 // G[sx + sy * Nx][3 * i_particle_0_N    ] = particle_flux[0];
                 // G[sx + sy * Nx][3 * i_particle_0_N + 1] = particle_flux[1];
                 // G[sx + sy * Nx][3 * i_particle_0_N + 2] = particle_flux[2];
+
+                // Trying to populate G row wise:
                 int sensor_idx = Nx * sy + sx;
                 G[(3 * Npart) * sensor_idx + (3 * i_particle_0_N    )] = particle_flux[0];
                 G[(3 * Npart) * sensor_idx + (3 * i_particle_0_N + 1)] = particle_flux[1];
                 G[(3 * Npart) * sensor_idx + (3 * i_particle_0_N + 2)] = particle_flux[2];
-
-                // Transposed:
-                // G[Nx * Ny * (3 * i_particle_0_N    ) + i + Nx * j] = particle_flux[0];
-                // G[Nx * Ny * (3 * i_particle_0_N + 1) + i + Nx * j] = particle_flux[1];
-                // G[Nx * Ny * (3 * i_particle_0_N + 2) + i + Nx * j] = particle_flux[2];
 
                 // Move to next particle (last i_particle after ending while loop)
                 i_particle_prev = i_particle;
@@ -178,10 +167,9 @@ If Origin is True (default), the cuboids are stored with their original
 coordinates. If cuboids are shifted, Origin is False.
 */
 
-// G matrix     -> 1D array that comes from the Python array: (N_parts, Nx * Ny)
-//                 So it;s the transposed version of original G
+// G matrix     -> 1D array that comes from the Python array: (Nx * Ny, 3 * N_parts)
 // QDM_domain   -> array with 4 entries x1 y1 x2 y2
-// cuboids      -> N_part * 6 array
+// cuboids      -> N_cuboids * 7 array
 void populate_matrix_cuda(double * G,
                           double * QDM_domain, double scan_height,
                           double * cuboids,
@@ -205,9 +193,9 @@ void populate_matrix_cuda(double * G,
     }
 
     unsigned int G_bytes = sizeof(double) * Nx * Ny * 3 * Npart;
-    unsigned int cuboids_bytes = sizeof(double) * N_cuboids;
+    unsigned int cuboids_bytes = sizeof(double) * 7 * N_cuboids;
 
-    // Manual mem allocation:
+    // Manual mem allocation: G in GPU and cuboids_dev in GPU
     double *G_dev;
     // CUDA_ASSERT(cudaMalloc((void**)&G_dev, G_bytes));
     cudaMalloc((void**)&G_dev, G_bytes);
@@ -218,14 +206,17 @@ void populate_matrix_cuda(double * G,
     cudaMemcpy(cuboids_dev, cuboids, cuboids_bytes, cudaMemcpyHostToDevice);
 
     // Launch kernel
-    // int size     = matrix_size;
     // Quadro RTX 6000: 4608 CUDA Cores
+    // More refined matrix allocation of blocks if we use smaller n_threads, e.g. 8
     int n_threads = 16; // 256 threads per block in 2D
-    // Determine based on problem size: Nx * Ny (easy for a matrix)
+    // Determine blocks and grid based on problem size: Nx * Ny (easy for a matrix)
     int n_blocks_x = (Nx / n_threads) + ((Nx % n_threads) != 0);
     int n_blocks_y = (Ny / n_threads) + ((Ny % n_threads) != 0);
     dim3 grid(n_blocks_x, n_blocks_y);
     dim3 block(n_threads, n_threads);
+
+    // printf("Running with grid = %d x %d\n", n_blocks_x, n_blocks_y);
+    // printf("Running with blocks = %d x %d\n", n_threads, n_threads);
 
     pop_matrix_nv<<<grid, block>>>(G_dev, cuboids_dev, 
                                    N_cuboids, Nx, Ny, Npart,
@@ -237,5 +228,6 @@ void populate_matrix_cuda(double * G,
     cudaMemcpy(G, G_dev, G_bytes, cudaMemcpyDeviceToHost);
 
     cudaFree(G_dev);
+    cudaFree(cuboids_dev);
 
 } // main function
