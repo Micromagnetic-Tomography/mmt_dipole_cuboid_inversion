@@ -198,7 +198,8 @@ void populate_matrix_cuda(double * G,
     // Manual mem allocation: G in GPU and cuboids_dev in GPU
     double *G_dev;
     // CUDA_ASSERT(cudaMalloc((void**)&G_dev, G_bytes));
-    cudaMalloc((void**)&G_dev, G_bytes);
+    // (allocate in GPU if enough memory, see below)
+    // cudaMalloc((void**)&G_dev, G_bytes);
 
     double *cuboids_dev;
     cudaMalloc((void**)&cuboids_dev, cuboids_bytes);
@@ -215,17 +216,63 @@ void populate_matrix_cuda(double * G,
     dim3 grid(n_blocks_x, n_blocks_y);
     dim3 block(n_threads, n_threads);
 
-    // printf("Running with grid = %d x %d\n", n_blocks_x, n_blocks_y);
-    // printf("Running with blocks = %d x %d\n", n_threads, n_threads);
+    // Checking available memory in GPU:
+    size_t free_byte;
+    size_t total_byte;
+    cudaError_t cuda_status = cudaMemGetInfo(&free_byte, &total_byte);
+    double free_db = (double) free_byte / (1024. * 1024.);
+    // Quadro RTX 6000: total mem should be 24220.3125 Mb
+    double total_db = (double) total_byte / (1024. * 1024.);
+    double used_db = total_db - free_db;
+    double G_size_mb = (double) G_bytes / (1024. * 1024.);
+    double cuboids_size_mb = (double) cuboids_bytes / (1024. * 1024.);
+    if(verbose == 0) {
+        printf("GPU Memory      (MB): free = %.4f | used = %.4f | total = %.4f\n", free_db, used_db, total_db);
+        printf("Size of G       (MB): %.4f\n", G_size_mb);
+        printf("Size of cuboids (MB): %.4f\n", cuboids_size_mb);
+        printf("Blocks grid = %d x %d\n", n_blocks_x, n_blocks_y);
+        printf("Threads per block = %d x %d\n", n_threads, n_threads);
+    }
 
-    pop_matrix_nv<<<grid, block>>>(G_dev, cuboids_dev, 
-                                   N_cuboids, Nx, Ny, Npart,
-                                   QDM_deltax, QDM_deltay, QDM_spacing,
-                                   xi0, eta0, zeta0, verbose);
-    cudaDeviceSynchronize();
+    // Quadro RTX 6000: total mem should be 24220.3125 Mb
+    // double MEM_THRESHOLD = 22000;
 
-    // Copy G from the GPU to the host
-    cudaMemcpy(G, G_dev, G_bytes, cudaMemcpyDeviceToHost);
+    // Calculate if there's enough memory in card
+    if ((G_size_mb + cuboids_size_mb) > free_db) {
+        // Estimate an optimal size for the sub-matrix. We will use a square m
+        unsigned int N = sqrt((free_db - cuboids_size_mb) / (3 * Npart));
+        G_bytes = sizeof(double) * N * N * 3 * Npart;
+        cudaMalloc((void**)&G_dev, G_bytes);
+
+        // TODO:
+        // - Use a for loop to populate the submatrix G_dev in device, using strides of
+        //   size N in x-direction and y-direction
+        //   + For this we have to find out a way to register the i,j sites that were
+        //     calculated in the device in order to copy these sites into the
+        //     corresponding sites of the full G matrix in the host device
+        // - The pop_matrix_nv function in device might need to be modified in order
+        //   to specify the i0,j0 pairs where the submatrix is located (starting point
+        //   for populating G)
+        //   + It might be easy if we just add i0,j0 to the indices sx,sy in the for loop
+        //     of pop_matrix_nv
+        // - To populate the full G matrix, we can use cudaMemcpy with (needs checking)
+        //   &G_dev[i0 + N * j0] , to start pop from a different loc in the G array
+
+    }
+    else {
+        // Allocate G matrix
+        cudaMalloc((void**)&G_dev, G_bytes);
+
+        // Populate matrix in GPU:
+        pop_matrix_nv<<<grid, block>>>(G_dev, cuboids_dev, 
+                                       N_cuboids, Nx, Ny, Npart,
+                                       QDM_deltax, QDM_deltay, QDM_spacing,
+                                       xi0, eta0, zeta0, verbose);
+        cudaDeviceSynchronize();
+
+        // Copy G from the GPU to the host
+        cudaMemcpy(G, G_dev, G_bytes, cudaMemcpyDeviceToHost);
+    }
 
     cudaFree(G_dev);
     cudaFree(cuboids_dev);
