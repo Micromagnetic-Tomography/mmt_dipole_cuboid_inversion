@@ -39,8 +39,10 @@ def locate_cuda():
         # otherwise, search the PATH for NVCC
         nvcc = find_in_path('nvcc', os.environ['PATH'])
         if nvcc is None:
-            raise EnvironmentError('The nvcc binary could not be '
-                'located in your $PATH. Either add it to your path, or set $CUDAHOME')
+            # raise EnvironmentError('The nvcc binary could not be '
+            #     'located in your $PATH. Either add it to your path, or set $CUDAHOME')
+            return False
+
         home = os.path.dirname(os.path.dirname(nvcc))
 
     cudaconfig = {'home':home, 'nvcc':nvcc,
@@ -49,9 +51,11 @@ def locate_cuda():
 
     for k, v in cudaconfig.items():
         if not os.path.exists(v):
-            raise EnvironmentError('The CUDA %s path could not be located in %s' % (k, v))
+            # raise EnvironmentError('The CUDA %s path could not be located in %s' % (k, v))
+            return False
 
     return cudaconfig
+
 CUDA = locate_cuda()
 print(CUDA)
 
@@ -111,73 +115,61 @@ extensions = [
               extra_compile_args={'gcc': com_args},
               extra_link_args=link_args,
               include_dirs=[numpy.get_include()]
-              ),
-    #
-    # Extension("dipole_inverse.cython_cuda_lib.pop_matrix_cudalib",
-    #           ["dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx",
-    #            "dipole_inverse/cython_cuda_lib/pop_matrix_cuda_lib.c"],
-    #           extra_compile_args=com_args,
-    #           extra_link_args=link_args,
-    #           include_dirs=[numpy.get_include()]
-    #           ),
-
-    Extension("dipole_inverse.cython_cuda_lib.pop_matrix_cudalib",
-              sources=["dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx",
-                       "dipole_inverse/cython_cuda_lib/pop_matrix_cuda_lib.cu"],
-              # library_dirs=[CUDA['lib64']],
-              libraries=['cudart'],
-              language='c++',
-              # This syntax is specific to this build system
-              # We're only going to use certain compiler args with nvcc and not with gcc
-              # the implementation of this trick is in customize_compiler() below
-              # For nvcc we use the Turing architecture: sm_75
-              # See: https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
-              # FMAD (floating-point multiply-add): turning off helps for numerical precission (useful
-              #                                     for graphics) but this might slightly affect performance
-              extra_compile_args={'gcc': com_args,
-                                  'nvcc': ['-arch=sm_75', '--fmad=false', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
-              include_dirs = [numpy.get_include(), CUDA['include'], '.'],
-              library_dirs=[CUDA['lib64']],
-              runtime_library_dirs=[CUDA['lib64']]
-              )
+    )
 ]
+
+if CUDA:
+    extensions.append(
+        Extension("dipole_inverse.cython_cuda_lib.pop_matrix_cudalib",
+                  sources=["dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx",
+                           "dipole_inverse/cython_cuda_lib/pop_matrix_cuda_lib.cu"],
+                  # library_dirs=[CUDA['lib64']],
+                  libraries=['cudart'],
+                  language='c++',
+                  # This syntax is specific to this build system
+                  # We're only going to use certain compiler args with nvcc and not with gcc
+                  # the implementation of this trick is in customize_compiler() below
+                  # For nvcc we use the Turing architecture: sm_75
+                  # See: https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+                  # FMAD (floating-point multiply-add): turning off helps for numerical precission (useful
+                  #                                     for graphics) but this might slightly affect performance
+                  extra_compile_args={'gcc': com_args,
+                                      'nvcc': ['-arch=sm_75', '--fmad=false', 
+                                               '--ptxas-options=-v', '-c',
+                                               '--compiler-options', "'-fPIC'"]},
+                  include_dirs = [numpy.get_include(), CUDA['include'], '.'],
+                  library_dirs=[CUDA['lib64']],
+                  runtime_library_dirs=[CUDA['lib64']]
+        )
+    )
 
 # -----------------------------------------------------------------------------
 
-with open('README.md') as f:
-    long_description = f.read()
+if CUDA is False:
+    print("CUDAHOME env variable or CUDA not found: skipping cuda extensions")
+    cmdclass = {'build_ext': build_ext}
+else:
+    cmdclass = {'build_ext': custom_build_ext}
 
-setuptools.setup(
-    # setup_requires=['cython'],  # not working (see the link at top)
-    name='dipole_inverse',
-    version='1.9',
-    description=('Python lib to calculate dipole magnetization'),
-    long_description=long_description,
-    long_description_content_type='text/markdown',
-    author='F. Out, D. Cortes, M. Kosters, K. Fabian, L. V. de Groot',
-    author_email='f.out@students.uu.nl',
-    packages=setuptools.find_packages(),
-    ext_modules=cythonize(extensions),
-
-    # inject our custom trigger
-    cmdclass={'build_ext': custom_build_ext},
-
-    install_requires=['matplotlib',
-                      'numpy>=1.20',
-                      'scipy>=1.6',
-                      'numba>=0.51',
-                      'descartes',
-                      'pathlib',
-                      'shapely',
-                      # The following is a dependency in a private repository:
-                      'grain_geometry_tools @ git+ssh://git@github.com/Micromagnetic-Tomography/grain_geometry_tools'
-                      ],
-
-    # TODO: Update license
-    classifiers=['License :: BSD2 License',
-                 'Programming Language :: Python :: 3 :: Only',
-                 ],
-
-    # since the package has c code, the egg cannot be zipped
-    zip_safe=False
-)
+# See if Cython is installed
+try:
+    from Cython.Build import cythonize
+# Do nothing if Cython is not available
+except ImportError:
+    # Got to provide this function. Otherwise, poetry will fail
+    def build(setup_kwargs):
+        print('Not compiling Cython module')
+        pass
+# Cython is installed. Compile
+else:
+    # This function will be executed in setup.py:
+    def build(setup_kwargs):
+        # Build
+        setup_kwargs.update({
+            'ext_modules': cythonize(
+                extensions,
+                language_level=3,
+                compiler_directives={'linetrace': True},
+            ),
+            'cmdclass': {'build_ext': build_ext}
+        })
