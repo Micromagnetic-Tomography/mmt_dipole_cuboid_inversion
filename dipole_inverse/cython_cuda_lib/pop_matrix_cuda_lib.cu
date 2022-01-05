@@ -226,23 +226,35 @@ void populate_matrix_cuda(double * G,
     double used_db = total_db - free_db;
     double G_size_mb = (double) G_bytes / (1024. * 1024.);
     double cuboids_size_mb = (double) cuboids_bytes / (1024. * 1024.);
-    if(verbose == 0) {
-        printf("GPU Memory      (MB): free = %.4f | used = %.4f | total = %.4f\n", free_db, used_db, total_db);
-        printf("Size of G       (MB): %.4f\n", G_size_mb);
-        printf("Size of cuboids (MB): %.4f\n", cuboids_size_mb);
-        printf("Blocks grid = %d x %d\n", n_blocks_x, n_blocks_y);
-        printf("Threads per block = %d x %d\n", n_threads, n_threads);
-    }
+
+    // if(verbose == 0) {
+    printf("------------ Nvidia GPU calculation info ------------\n");
+    printf("GPU Memory      (MB): free  = %.4f\n", free_db);
+    printf("                      used  = %.4f\n", used_db);
+    printf("                      total = %.4f\n", total_db);
+    printf("Size of G       (MB): %.4f\n", G_size_mb);
+    printf("Size of cuboids (MB): %.4f\n", cuboids_size_mb);
+    printf("Blocks grid = %d x %d\n", n_blocks_x, n_blocks_y);
+    printf("Threads per block = %d x %d\n", n_threads, n_threads);
+    printf("Sensor Matrix dims (rows x cols) = %d x %d\n", Ny, Nx);
+    // }
 
     // Quadro RTX 6000: total mem should be 24220.3125 Mb
     // double MEM_THRESHOLD = 22000;
 
     // Calculate if there's enough memory in card
     if ((G_size_mb + cuboids_size_mb) > free_db) {
+
+        printf("Not enough available memory in GPU\n");
+        // printf("Calculation of large sensor matrices will be implemented in the future\n");
+        printf("Stopping calculation\n");
+        return;
+
+        // -- WIP --
         // Estimate an optimal size for the sub-matrix. We will use a square m
-        unsigned int N = sqrt((free_db - cuboids_size_mb) / (3 * Npart));
-        G_bytes = sizeof(double) * N * N * 3 * Npart;
-        cudaMalloc((void**)&G_dev, G_bytes);
+        // unsigned int N = sqrt((free_db - cuboids_size_mb) / (3 * Npart));
+        // G_bytes = sizeof(double) * N * N * 3 * Npart;
+        // cudaMalloc((void**)&G_dev, G_bytes);
 
         // TODO:
         // - Use a for loop to populate the submatrix G_dev in device, using strides of

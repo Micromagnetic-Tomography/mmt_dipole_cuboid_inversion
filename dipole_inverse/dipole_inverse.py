@@ -5,8 +5,9 @@ import scipy.linalg as spl
 from .cython_lib import pop_matrix_lib   # the cython populate_matrix function
 try:
     from .cython_cuda_lib import pop_matrix_cudalib   # the cuda populate_matrix function
-except:
-    pass
+    HASCUDA = True
+except ImportError:
+    HASCUDA = False
 from typing import Literal   # Working with Python >3.8
 from typing import Union     # Working with Python >3.8
 from typing import Tuple     # Working with Python >3.8
@@ -328,7 +329,7 @@ class Dipole(object):
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
 
-    _PrepMatOps = Literal['cython', 'numba']
+    _PrepMatOps = Literal['cython', 'numba', 'cuda']
 
     def prepare_matrix(self,
                        Origin: bool = True,
@@ -346,8 +347,8 @@ class Dipole(object):
         verbose
             Set to True to print log information when populating the matrix
         method
-            Populating the matrix can be done using either 'numba' or 'cython'
-            optimisation.
+            Populating the matrix can be done using either `numba` or `cython`
+            or (nvidia) `cuda` optimisation.
             The cython function is parallelized with OpenMP thus the number of
             threads is specified from the `OMP_NUM_THREADS` system variable.
             This can be limited using set_max_num_threads in the tools module
@@ -364,6 +365,10 @@ class Dipole(object):
                 Origin, int(verbose))
 
         if method == 'cuda':
+            if HASCUDA is False:
+                print('The cuda method is not available. Stopping calculation')
+                return
+
             self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
             pop_matrix_cudalib.populate_matrix_cython(
                 self.Forward_G, self.QDM_domain[0], self.scan_height,
