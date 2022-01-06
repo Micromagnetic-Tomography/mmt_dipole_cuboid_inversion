@@ -6,7 +6,7 @@ from pathlib import Path
 set_max_num_threads(6)
 import dipole_inverse as dpinv  # noqa: E402
 
-data_path = Path('./tutorial_qdm_data/')
+data_path = Path('../chest/tutorial_qdm_data/')
 
 # location and name of QDM and cuboid file
 QDMfile = data_path / 'class_QDM_result2.txt'
@@ -34,4 +34,4 @@ mag_svd = dpinv.Dipole(
     QDM_deltax, QDM_deltay, QDM_area, sample_height,
     scan_height)
 
-mag_svd.obtain_magnetization()
+mag_svd.obtain_magnetization(method_populate='cuda', verbose=False)
