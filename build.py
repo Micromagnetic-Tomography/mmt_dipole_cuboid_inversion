@@ -1,5 +1,6 @@
 import setuptools
 from setuptools.extension import Extension
+from setuptools.dist import Distribution
 from Cython.Distutils import build_ext
 # import sys
 # cython and python dependency is handled by pyproject.toml
@@ -151,25 +152,33 @@ if CUDA is False:
 else:
     cmdclass = {'build_ext': custom_build_ext}
 
-# See if Cython is installed
-try:
-    from Cython.Build import cythonize
-# Do nothing if Cython is not available
-except ImportError:
-    # Got to provide this function. Otherwise, poetry will fail
-    def build(setup_kwargs):
-        print('Not compiling Cython module')
+# -----------------------------------------------------------------------------
+
+class BuildExt(build_ext):
+    def build_extensions(self):
+        try:
+            if CUDAHOME is False:
+                customize_compiler_for_nvcc(self.compiler)
+                super().build_extensions(self)
+            else:
+                super().build_extensions(self)
+        except Exception:
+            pass
+
+def build(setup_kwargs):
+    try:
+        from Cython.Build import cythonize
+    except ImportError:
         pass
-# Cython is installed. Compile
-else:
-    # This function will be executed in setup.py:
-    def build(setup_kwargs):
-        # Build
-        setup_kwargs.update({
-            'ext_modules': cythonize(
-                extensions,
-                language_level=3,
-                compiler_directives={'linetrace': True},
-            ),
-            'cmdclass': {'build_ext': build_ext}
-        })
+    else:
+        setup_kwargs.update(
+            dict(
+                cmdclass=dict(build_ext=BuildExt),
+                ext_modules=cythonize(extensions,
+                                      language_level=3,
+                                      ),
+            )
+        )
+
+if __name__ == "__main__":
+    build({})
