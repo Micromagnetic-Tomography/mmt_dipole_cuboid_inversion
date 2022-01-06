@@ -366,8 +366,7 @@ class Dipole(object):
 
         if method == 'cuda':
             if HASCUDA is False:
-                print('The cuda method is not available. Stopping calculation')
-                return
+                raise Exception('The cuda method is not available. Stopping calculation')
 
             self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
             pop_matrix_cudalib.populate_matrix_cython(
