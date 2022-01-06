@@ -42,5 +42,5 @@ shapely = ">=1.7"
 [tool.poetry.dev-dependencies]
 
 [build-system]
-requires = ["poetry-core>=1.0.0", "cython"]
+requires = ["poetry-core>=1.0.0", "cython", "setuptools"]
 build-backend = "poetry.core.masonry.api"

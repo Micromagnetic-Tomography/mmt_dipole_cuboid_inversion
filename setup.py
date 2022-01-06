@@ -1,6 +1,5 @@
 import setuptools
 from setuptools.extension import Extension
-from setuptools.dist import Distribution
 from Cython.Distutils import build_ext
 # import sys
 # cython and python dependency is handled by pyproject.toml
@@ -146,39 +145,46 @@ if CUDA:
 
 # -----------------------------------------------------------------------------
 
+with open('README.md') as f:
+    long_description = f.read()
+
 if CUDA is False:
-    print("CUDAHOME env variable or CUDA not found: skipping cuda extensions")
-    cmdclass = {'build_ext': build_ext}
+    cmdclass = None
 else:
     cmdclass = {'build_ext': custom_build_ext}
 
-# -----------------------------------------------------------------------------
+setuptools.setup(
+    # setup_requires=['cython'],  # not working (see the link at top)
+    name='dipole_inverse',
+    version='1.9',
+    description=('Python lib to calculate dipole magnetization'),
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    author='F. Out, D. Cortes, M. Kosters, K. Fabian, L. V. de Groot',
+    author_email='f.out@students.uu.nl',
+    packages=setuptools.find_packages(),
+    ext_modules=cythonize(extensions),
 
-class BuildExt(build_ext):
-    def build_extensions(self):
-        try:
-            if CUDAHOME is False:
-                customize_compiler_for_nvcc(self.compiler)
-                super().build_extensions(self)
-            else:
-                super().build_extensions(self)
-        except Exception:
-            pass
+    # inject our custom trigger
+    cmdclass={'build_ext': custom_build_ext},
 
-def build(setup_kwargs):
-    try:
-        from Cython.Build import cythonize
-    except ImportError:
-        pass
-    else:
-        setup_kwargs.update(
-            dict(
-                cmdclass=dict(build_ext=BuildExt),
-                ext_modules=cythonize(extensions,
-                                      language_level=3,
-                                      ),
-            )
-        )
+    setup_requires=['numpy<1.22'],
+    install_requires=[# 'matplotlib',
+                      'numpy<1.22',
+                      # 'scipy>=1.6',
+                      # 'numba>=0.51',
+                      # 'descartes',
+                      # 'pathlib',
+                      # 'shapely',
+                      # The following is a dependency in a private repository:
+                      # 'grain_geometry_tools @ git+ssh://git@github.com/Micromagnetic-Tomography/grain_geometry_tools'
+                      ],
 
-if __name__ == "__main__":
-    build({})
+    # TODO: Update license
+    classifiers=['License :: BSD2 License',
+                 'Programming Language :: Python :: 3 :: Only',
+                 ],
+
+    # since the package has c code, the egg cannot be zipped
+    zip_safe=False
+)
