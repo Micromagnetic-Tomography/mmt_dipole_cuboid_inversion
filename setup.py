@@ -169,15 +169,15 @@ setuptools.setup(
     cmdclass={'build_ext': custom_build_ext},
 
     setup_requires=['numpy<1.22'],
-    install_requires=[# 'matplotlib',
+    install_requires=['matplotlib',
                       'numpy<1.22',
-                      # 'scipy>=1.6',
-                      # 'numba>=0.51',
-                      # 'descartes',
-                      # 'pathlib',
-                      # 'shapely',
+                      'scipy>=1.6',
+                      'numba>=0.51',
+                      'descartes',
+                      'pathlib',
+                      'shapely',
                       # The following is a dependency in a private repository:
-                      # 'grain_geometry_tools @ git+ssh://git@github.com/Micromagnetic-Tomography/grain_geometry_tools'
+                      'grain_geometry_tools @ git+ssh://git@github.com/Micromagnetic-Tomography/grain_geometry_tools'
                       ],
 
     # TODO: Update license
