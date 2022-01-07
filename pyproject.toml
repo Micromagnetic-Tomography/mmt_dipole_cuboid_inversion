@@ -1,3 +1,47 @@
+[tool.poetry]
+name = "dipole_inverse"
+version = "1.9"
+description = "Python lib to calculate dipole magnetization"
+authors = ["F. Out, D. Cortes, M. Kosters, K. Fabian, L. V. de Groot <f.out@students.uu.nl>"]
+license = "BSD-2-Clause"
+readme = "README.md"
+build = "build.py"
+
+
+packages = [
+    {include = "dipole_inverse"},
+    {include = "dipole_inverse_tools"},
+]
+
+include = [
+    # C extensions must be included in the wheel distributions
+    {path = "dipole_inverse/cython_lib/*.so", format = "wheel"},
+    {path = "dipole_inverse/cython_lib/*.pyd", format = "wheel"},
+    {path = "dipole_inverse/cython_cuda_lib/*.so", format = "wheel"},
+    {path = "dipole_inverse/cython_cuda_lib/*.pyd", format = "wheel"},
+]
+
+# [tool.poetry.build]
+# generate-setup-file = false
+# script = "build.py"
+
 # 05/01/21: latest numba, 0.55, only accepts numpy < 1.22
+[tool.poetry.dependencies]
+cython = ">=0.29.26"
+python = ">=3.8,<3.10"
+numpy = "<1.22"
+numba = ">=0.52"
+scipy = ">=1.6"
+descartes = ">=1.0"
+pathlib = ">=1.0"
+shapely = ">=1.7"
+# The following is a dependency in a private repository. 
+# These are not currently working with poetry
+# grain-geometry-tools = {path = "../grain_geometry_tools"}
+# grain-geometry-tools = { git = "ssh://git@github.com/Micromagnetic-Tomography/grain_geometry_tools.git", branch = "master" }
+
+[tool.poetry.dev-dependencies]
+
 [build-system]
-requires = ["setuptools", "wheel", "Cython", "numpy<1.22"]
+requires = ["poetry-core>=1.0.0", "cython", "setuptools"]
+build-backend = "poetry.core.masonry.api"

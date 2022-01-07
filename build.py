@@ -1,7 +1,11 @@
 import setuptools
 from setuptools.extension import Extension
-from Cython.Distutils import build_ext
-# import sys
+from setuptools.dist import Distribution
+# from Cython.Distutils import build_ext
+# setuptools contains the correct self.build_extensions function when
+# writing our own custom_build_ext function:
+# This might help: https://github.com/cython/cython/blob/master/docs/src/tutorial/appendix.rst
+from setuptools.command.build_ext import build_ext
 # cython and python dependency is handled by pyproject.toml
 from Cython.Build import cythonize
 import numpy
@@ -57,7 +61,7 @@ def locate_cuda():
     return cudaconfig
 
 CUDA = locate_cuda()
-print(CUDA)
+# print(CUDA)
 
 def customize_compiler_for_nvcc(self):
     """inject deep into distutils to customize how the dispatch
@@ -104,21 +108,41 @@ class custom_build_ext(build_ext):
         build_ext.build_extensions(self)
 
 # -----------------------------------------------------------------------------
+# Compilation of CPP modules
 
-# Compilation of C module in c_lib
-com_args = ['-std=c99', '-O3', '-fopenmp']
+# Define .cpp .c aguments passed to the compiler
+# If using cuda, we set a dictionary to use different arguments for nvcc
+# (see custom compiler)
+if CUDA:
+    com_args = dict(gcc=['-std=c99', '-O3', '-fopenmp'])
+else:
+    com_args = ['-std=c99', '-O3', '-fopenmp']
+
 link_args = ['-fopenmp']
+
 extensions = [
     Extension("dipole_inverse.cython_lib.pop_matrix_lib",
               ["dipole_inverse/cython_lib/pop_matrix_lib.pyx",
                "dipole_inverse/cython_lib/pop_matrix_C_lib.c"],
-              extra_compile_args={'gcc': com_args},
+              extra_compile_args=com_args,
               extra_link_args=link_args,
               include_dirs=[numpy.get_include()]
     )
 ]
 
 if CUDA:
+    # Add cuda options to the com_args dict and the extra library
+    #
+    # This syntax is specific to this build system
+    # We're only going to use certain compiler args with nvcc and not with gcc
+    # the implementation of this trick is in customize_compiler() below
+    # For nvcc we use the Turing architecture: sm_75
+    # See: https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+    # FMAD (floating-point multiply-add): turning off helps for numerical precission (useful
+    #                                     for graphics) but this might slightly affect performance
+    com_args['nvcc'] = ['-arch=sm_75', '--fmad=false', '--ptxas-options=-v',
+                        '-c', '--compiler-options', "'-fPIC'"]
+
     extensions.append(
         Extension("dipole_inverse.cython_cuda_lib.pop_matrix_cudalib",
                   sources=["dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx",
@@ -126,17 +150,7 @@ if CUDA:
                   # library_dirs=[CUDA['lib64']],
                   libraries=['cudart'],
                   language='c++',
-                  # This syntax is specific to this build system
-                  # We're only going to use certain compiler args with nvcc and not with gcc
-                  # the implementation of this trick is in customize_compiler() below
-                  # For nvcc we use the Turing architecture: sm_75
-                  # See: https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
-                  # FMAD (floating-point multiply-add): turning off helps for numerical precission (useful
-                  #                                     for graphics) but this might slightly affect performance
-                  extra_compile_args={'gcc': com_args,
-                                      'nvcc': ['-arch=sm_75', '--fmad=false', 
-                                               '--ptxas-options=-v', '-c',
-                                               '--compiler-options', "'-fPIC'"]},
+                  extra_compile_args=com_args,
                   include_dirs = [numpy.get_include(), CUDA['include'], '.'],
                   library_dirs=[CUDA['lib64']],
                   runtime_library_dirs=[CUDA['lib64']]
@@ -145,46 +159,37 @@ if CUDA:
 
 # -----------------------------------------------------------------------------
 
-with open('README.md') as f:
-    long_description = f.read()
-
 if CUDA is False:
-    cmdclass = None
+    print("CUDAHOME env variable or CUDA not found: skipping cuda extensions")
+    cmdclass = {'build_ext': build_ext}
 else:
     cmdclass = {'build_ext': custom_build_ext}
 
-setuptools.setup(
-    # setup_requires=['cython'],  # not working (see the link at top)
-    name='dipole_inverse',
-    version='1.9',
-    description=('Python lib to calculate dipole magnetization'),
-    long_description=long_description,
-    long_description_content_type='text/markdown',
-    author='F. Out, D. Cortes, M. Kosters, K. Fabian, L. V. de Groot',
-    author_email='f.out@students.uu.nl',
-    packages=setuptools.find_packages(),
-    ext_modules=cythonize(extensions),
+# -----------------------------------------------------------------------------
 
-    # inject our custom trigger
-    cmdclass={'build_ext': custom_build_ext},
+# For now we do not need a custom BuildExt class
+# class BuildExt(build_ext):
+#     def build_extensions(self):
+#         try:
+#             if CUDA is not False:
+#                 print('Here')
+#                 customize_compiler_for_nvcc(super().compiler)
+#                 super().build_extension(self)
+#                 super().run()
+#             else:
+#                 super().build_extensions(self)
+#         except Exception:
+#             pass
 
-    setup_requires=['numpy<1.22'],
-    install_requires=['matplotlib',
-                      'numpy<1.22',
-                      'scipy>=1.6',
-                      'numba>=0.51',
-                      'descartes',
-                      'pathlib',
-                      'shapely',
-                      # The following is a dependency in a private repository:
-                      'grain_geometry_tools @ git+ssh://git@github.com/Micromagnetic-Tomography/grain_geometry_tools'
-                      ],
-
-    # TODO: Update license
-    classifiers=['License :: BSD2 License',
-                 'Programming Language :: Python :: 3 :: Only',
-                 ],
-
-    # since the package has c code, the egg cannot be zipped
-    zip_safe=False
-)
+# We are assuming Cython IS installed, otherwise, see solution at
+# https://github.com/davidcortesortuno/oommfpy/blob/master/build.py
+def build(setup_kwargs):
+    setup_kwargs.update(
+        dict(
+            cmdclass=dict(build_ext=cmdclass['build_ext']),
+            ext_modules=cythonize(extensions,
+                                  language_level=3,
+                                  ),
+            zip_safe=False
+        )
+    )
