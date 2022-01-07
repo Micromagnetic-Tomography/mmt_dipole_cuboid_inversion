@@ -1,3 +1,5 @@
+# See: https://github.com/python-poetry/poetry/issues/2740
+# for the current status of the build.py file in Poetry
 [tool.poetry]
 name = "dipole_inverse"
 version = "1.9"
