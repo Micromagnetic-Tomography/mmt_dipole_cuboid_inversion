@@ -183,13 +183,28 @@ else:
 
 # We are assuming Cython IS installed, otherwise, see solution at
 # https://github.com/davidcortesortuno/oommfpy/blob/master/build.py
-def build(setup_kwargs):
-    setup_kwargs.update(
-        dict(
+# def build(setup_kwargs):
+#     setup_kwargs.update(
+#         dict(
+#             cmdclass=dict(build_ext=cmdclass['build_ext']),
+#             ext_modules=cythonize(extensions,
+#                                   language_level=3,
+#                                   ),
+#             zip_safe=False
+#         )
+#     )
+
+# distutils magic. This is essentially the same as calling
+# python setup.py build_ext --inplace
+dist = Distribution(attrs=dict(
             cmdclass=dict(build_ext=cmdclass['build_ext']),
             ext_modules=cythonize(extensions,
                                   language_level=3,
                                   ),
             zip_safe=False
         )
-    )
+)
+build_ext_cmd = dist.get_command_obj('build_ext')
+build_ext_cmd.ensure_finalized()
+build_ext_cmd.inplace = 1
+build_ext_cmd.run()

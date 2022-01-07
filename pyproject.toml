@@ -5,7 +5,7 @@ description = "Python lib to calculate dipole magnetization"
 authors = ["F. Out, D. Cortes, M. Kosters, K. Fabian, L. V. de Groot <f.out@students.uu.nl>"]
 license = "BSD-2-Clause"
 readme = "README.md"
-build = "build.py"
+# build = "build.py"
 
 
 packages = [
@@ -13,17 +13,17 @@ packages = [
     {include = "dipole_inverse_tools"},
 ]
 
-include = [
-    # C extensions must be included in the wheel distributions
-    {path = "dipole_inverse/cython_lib/*.so", format = "wheel"},
-    {path = "dipole_inverse/cython_lib/*.pyd", format = "wheel"},
-    {path = "dipole_inverse/cython_cuda_lib/*.so", format = "wheel"},
-    {path = "dipole_inverse/cython_cuda_lib/*.pyd", format = "wheel"},
-]
+# include = [
+#     # C extensions must be included in the wheel distributions
+#     {path = "dipole_inverse/cython_lib/*.so", format = "wheel"},
+#     {path = "dipole_inverse/cython_lib/*.pyd", format = "wheel"},
+#     {path = "dipole_inverse/cython_cuda_lib/*.so", format = "wheel"},
+#     {path = "dipole_inverse/cython_cuda_lib/*.pyd", format = "wheel"},
+# ]
 
-# [tool.poetry.build]
-# generate-setup-file = false
-# script = "build.py"
+[tool.poetry.build]
+generate-setup-file = false
+script = "build.py"
 
 # 05/01/21: latest numba, 0.55, only accepts numpy < 1.22
 [tool.poetry.dependencies]
