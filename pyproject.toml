@@ -13,13 +13,13 @@ packages = [
     {include = "dipole_inverse_tools"},
 ]
 
-# include = [
-#     # C extensions must be included in the wheel distributions
-#     {path = "dipole_inverse/cython_lib/*.so", format = "wheel"},
-#     {path = "dipole_inverse/cython_lib/*.pyd", format = "wheel"},
-#     {path = "dipole_inverse/cython_cuda_lib/*.so", format = "wheel"},
-#     {path = "dipole_inverse/cython_cuda_lib/*.pyd", format = "wheel"},
-# ]
+include = [
+    # C extensions must be included in the wheel distributions
+    {path = "dipole_inverse/cython_lib/*.so", format = "wheel"},
+    {path = "dipole_inverse/cython_lib/*.pyd", format = "wheel"},
+    {path = "dipole_inverse/cython_cuda_lib/*.so", format = "wheel"},
+    {path = "dipole_inverse/cython_cuda_lib/*.pyd", format = "wheel"},
+]
 
 [tool.poetry.build]
 generate-setup-file = false
