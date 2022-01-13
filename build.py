@@ -194,6 +194,7 @@ else:
 #         )
 #     )
 
+# Source: https://stackoverflow.com/questions/60501869/poetry-cython-tests-nosetests
 # distutils magic. This is essentially the same as calling
 # python setup.py build_ext --inplace
 dist = Distribution(attrs=dict(
