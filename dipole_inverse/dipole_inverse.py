@@ -2,10 +2,16 @@ import numpy as np
 import numba as nb
 from pathlib import Path
 import scipy.linalg as spl
-from .cython_lib import pop_matrix_lib    # the cython populate_matrix function
-from typing import Literal  # Working with Python >3.8
-from typing import Union    # Working with Python >3.8
-from typing import Tuple    # Working with Python >3.8
+from .cython_lib import pop_matrix_lib   # the cython populate_matrix function
+try:
+    from .cython_cuda_lib import pop_matrix_cudalib   # the cuda populate_matrix function
+    HASCUDA = True
+except ImportError:
+    HASCUDA = False
+from typing import Literal   # Working with Python >3.8
+from typing import Union     # Working with Python >3.8
+from typing import Tuple     # Working with Python >3.8
+from typing import Optional  # Working with Python >3.8
 # import os
 
 
@@ -35,6 +41,7 @@ def loadtxt_iter(txtfile, delimiter=None, skiprows=0, dtype=np.float64):
     """
 
     def iter_func():
+        line = ''
         with open(txtfile, 'r') as infile:
             for _ in range(skiprows):
                 next(infile)
@@ -46,6 +53,8 @@ def loadtxt_iter(txtfile, delimiter=None, skiprows=0, dtype=np.float64):
                 # re.split(" +", line)
                 for item in line:
                     yield dtype(item)
+        if len(line) == 0:
+            raise Exception(f'Empty file: {txtfile}')
         loadtxt_iter.rowlength = len(line)
 
     data = np.fromiter(iter_func(), dtype=dtype).flatten()
@@ -250,6 +259,8 @@ class Dipole(object):
         self.sample_height = sample_height
         self.scan_height = scan_height
 
+        self.Inverse_G = None
+
     def read_files(self,
                    QDM_data: str or np.ndarray or np.matrix,
                    cuboid_data: str or np.ndarray or np.matrix,
@@ -279,6 +290,7 @@ class Dipole(object):
         cuboids_reader_kwargs
             Extra arguments to the reader of cuboid files, e.g. `skiprows=2`
         """
+
         if isinstance(QDM_data, str):
             # self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
             # Use a faster reader, assuming the QDM file is separated by
@@ -291,6 +303,7 @@ class Dipole(object):
         else:
             raise TypeError(f'Type {type(QDM_data)} is not recognized',
                             'try str, np.ndarray or np.matrix')
+
         np.multiply(self.QDM_matrix, self.QDM_area, out=self.QDM_matrix)
         # ---------------------------------------------------------------------
         # Set the limits of the QDM domain
@@ -326,7 +339,7 @@ class Dipole(object):
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
 
-    _PrepMatOps = Literal['cython', 'numba']
+    _PrepMatOps = Literal['cython', 'numba', 'cuda']
 
     def prepare_matrix(self,
                        Origin: bool = True,
@@ -344,24 +357,34 @@ class Dipole(object):
         verbose
             Set to True to print log information when populating the matrix
         method
-            Populating the matrix can be done using either 'numba' or 'cython'
-            optimisation.
+            Populating the matrix can be done using either `numba` or `cython`
+            or (nvidia) `cuda` optimisation.
             The cython function is parallelized with OpenMP thus the number of
-            threads is specified from the OMP_NUM_THREADS system variable. This
-            can be limited using set_max_num_threads in the tools module
+            threads is specified from the `OMP_NUM_THREADS` system variable.
+            This can be limited using set_max_num_threads in the tools module
         """
 
+        self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
         if method == 'cython':
-            # The Cython function populates the matrix row-wise, thus we
-            # must transpose it after populating
-            self.Forward_G = np.zeros((3 * self.Npart, self.Nx * self.Ny))
+            # The Cython function populates the matrix column-wise via a 1D arr
             pop_matrix_lib.populate_matrix_cython(
                 self.Forward_G, self.QDM_domain[0], self.scan_height,
                 np.ravel(self.cuboids), self.Ncub,
                 self.Npart, self.Ny, self.Nx,
                 self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
                 Origin, int(verbose))
-            self.Forward_G = self.Forward_G.T
+
+        if method == 'cuda':
+            if HASCUDA is False:
+                raise Exception('The cuda method is not available. Stopping calculation')
+
+            self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
+            pop_matrix_cudalib.populate_matrix_cython(
+                self.Forward_G, self.QDM_domain[0], self.scan_height,
+                np.ravel(self.cuboids), self.Ncub,
+                self.Npart, self.Ny, self.Nx,
+                self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
+                Origin, int(verbose))
 
         elif method == 'numba':
             self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
@@ -378,17 +401,13 @@ class Dipole(object):
 
     def calculate_inverse(self,
                           method: _MethodOps = 'scipy_pinv',
-                          sigma: float = None,
-                          stdfile: str = None,
-                          ncovarfile: str = None,
-                          resofile: str = None,
-                          return_pinv_and_cnumber: Union[str, None, int, float] = False,
+                          store_inverse_G_matrix: bool = False,
                           **method_kwargs
-                          ) -> Union[Tuple[np.ndarray, np.ndarray], None]:
-        """
-        Calculates the inverse and computes the magnetization.  The solution is
-        generated in the self.Mag variable. Optionally, the covariance matrix can
-        be established.
+                          ) -> None:
+        r"""
+        Calculates the inverse and computes the magnetization. The solution is
+        generated in the self.Mag variable. Optionally, the covariance matrix
+        can be established.
 
         Parameters
         ----------
@@ -396,40 +415,21 @@ class Dipole(object):
             The numerical inversion can be done using the SVD algorithms or the
             least squares method. The options available are:
 
-            scipy_lapack    :: Uses scipy lapack wrappers for dgetrs and dgetrf
-                               to compute M by solving the matrix least squares
-                               problem: G^t * G * M = G^t * phi_QDM
-            scipy_pinv      :: Least squares method
-            scipy_pinv2     :: SVD method
-            numpy_pinv      :: SVD method
-        sigma
-            The standard deviation of the error of the magnetic field
-        stdfile
-            Location to where the standard deviation is written
-        ncovarfile
-            Location to where the normalized covariance matrix is written
-        resofile
-            Location to where the resolution matrix is written
-        return_pinv_and_cnumber
-            Optionally, return both the pseudo-inverse matrix and the condition
-            number of the forward matrix. The cond number is defined as the
-            product of the matrix norms of the forward matrix and its pseudo
-            inverse: |Q| * |Q^†|. Accordingly, this parameter is passed as a
-            string denoting the kind of matrix `norm` to be used, which is
-            determined by the `ord` parameter in `numpy.linalg.norm`. For
-            instance, return_pinv_and_cnumber='fro'. Notice that the condition
-            number will be determined by the cutoff value for the singular
-            values of the forward matrix.
+                * scipy_lapack    :: Uses scipy lapack wrappers for dgetrs and
+                                     dgetrf to compute :math:`\mathbf{M}` by
+                                     solving the matrix least squares problem:
+                                     :math:`Gᵀ * G * M = Gᵀ * ϕ_{QDM}`
+                * scipy_pinv      :: Least squares method
+                * scipy_pinv2     :: SVD method
+                * numpy_pinv      :: SVD method
 
         Notes
         -----
-        Additional keyword arguments are passed to the solver, e.g.
+        Additional keyword arguments are passed to the solver, e.g::
 
             calculate_inverse(method='numpy_pinv', rcond=1e-15)
-
         """
         SUCC_MSG = 'Inversion has been carried out'
-
         QDM_flatten = self.QDM_matrix.flatten()
         if self.Forward_G.shape[0] >= self.Forward_G.shape[1]:
             print(f'Start inversion with {self.Forward_G.shape[0]} '
@@ -437,7 +437,7 @@ class Dipole(object):
             # probably there is a more efficient way to write these options
             if method == 'scipy_pinv':
                 Inverse_G = spl.pinv(self.Forward_G, **method_kwargs)
-                self.Mag = np.matmul(Inverse_G, QDM_flatten)
+                self.Mag = np.matmul(Inverse_G, QDM_flatten)  # type: ignore
                 print(SUCC_MSG)
             elif method == 'scipy_pinv2':
                 Inverse_G = spl.pinv2(self.Forward_G, **method_kwargs)
@@ -472,29 +472,20 @@ class Dipole(object):
 
             else:
                 print(f'Method {method} is not recognized')
+
+            if store_inverse_G_matrix:
+                if method == 'scipy_lapack':
+                    raise Exception('LAPACK method does not compute G inverse')
+                else:
+                    # Warning: Inverse_G might be an unbound variable:
+                    self.Inverse_G = Inverse_G
+
         else:
             print(f'Problem is underdetermined with '
                   f'{self.Forward_G.shape[0]} knowns and '
                   f'{self.Forward_G.shape[1]} unknowns')
 
-        if sigma is not None:
-            covar = sigma**2 * np.matmul(Inverse_G, Inverse_G.transpose())
-            if stdfile is not None:
-                np.savetxt(stdfile, np.sqrt(np.diag(covar)).reshape(self.Npart, 3))
-            if ncovarfile is not None:
-                normcovar = covar.copy()
-                for row in range(covar.shape[0]):
-                    for column in range(covar.shape[1]):
-                        normcovar[row, column] = covar[row, column] / np.sqrt(covar[row, row] * covar[column, column])
-                np.savetxt(ncovarfile, normcovar)
-            if resofile is not None:
-                np.savetxt(resofile, np.matmul(Inverse_G, self.Forward_G))
-
-        if return_pinv_and_cnumber is not False:
-            cond_number = np.linalg.cond(self.Forward_G, p=return_pinv_and_cnumber)
-            return Inverse_G, cond_number
-        else:
-            return None
+        return None
 
     def calculate_forward(self,
                           cuboid_data: np.ndarray or np.matrix,
@@ -580,7 +571,8 @@ class Dipole(object):
 
     def save_results(self,
                      Magfile: str,
-                     keyfile: str):
+                     keyfile: str,
+                     ):
         """
         Saves the magnetization to a specified Magfile file and the keys of the
         index of the particles in the keyfile file.

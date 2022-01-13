@@ -146,10 +146,11 @@ void populate_matrix_C(double * G,
             }  // end while cuboids in i_particle
 
             // printf("%d %d", i + j * Nx, 3 * i_particle_prev);
-            // Trying to populate G row wise:
-            G[Nx * Ny * (3 * i_particle_0_N    ) + i + Nx * j] = particle_flux[0];
-            G[Nx * Ny * (3 * i_particle_0_N + 1) + i + Nx * j] = particle_flux[1];
-            G[Nx * Ny * (3 * i_particle_0_N + 2) + i + Nx * j] = particle_flux[2];
+            // Trying to populate G column wise:
+            int sensor_idx = Nx * j + i;
+            G[(3 * Npart) * sensor_idx + (3 * i_particle_0_N    )] = particle_flux[0];
+            G[(3 * Npart) * sensor_idx + (3 * i_particle_0_N + 1)] = particle_flux[1];
+            G[(3 * Npart) * sensor_idx + (3 * i_particle_0_N + 2)] = particle_flux[2];
             // DO NOT forget to transpose G after calling this function!
             //
             // OLD CODE:
