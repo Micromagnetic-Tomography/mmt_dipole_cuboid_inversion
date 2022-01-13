@@ -198,8 +198,6 @@ def populate_matrix_numba(G, QDM_domain, scan_height, cuboids, Npart,
 class Dipole(object):
 
     def __init__(self,
-                 QDM_data: str,
-                 cuboid_data: str,
                  QDM_domain: np.ndarray,
                  QDM_spacing: float,
                  QDM_deltax: float,
@@ -214,11 +212,6 @@ class Dipole(object):
 
         Parameters
         ----------
-        QDM_data
-            Matrixfile (Nx columns, Ny rows) containing the QDM/scan data in T
-        cuboid_data
-            File (x, y, z, dx, dy, dz, index) containing location and size
-            grains in microm
         QDM_domain
             (2x2 numpy matrix) : Size (metres) of the QDM domain as
              np.array([[x1, y1], [x2, y2]])
@@ -258,8 +251,6 @@ class Dipole(object):
 
         """
 
-        self.QDM_data = Path(QDM_data)
-        self.cuboid_data = Path(cuboid_data)
         self.QDM_domain = QDM_domain
         self.QDM_spacing = QDM_spacing
         self.QDM_deltax = QDM_deltax
@@ -271,7 +262,9 @@ class Dipole(object):
         self.Inverse_G = None
 
     def read_files(self,
-                   cuboid_scaling_factor: float = 1e-6,
+                   QDM_data: str or np.ndarray or np.matrix,
+                   cuboid_data: str or np.ndarray or np.matrix,
+                   cuboid_scaling_factor: float,
                    tol: float = 1e-7,
                    qdm_matrix_reader_kwargs={},
                    cuboids_reader_kwargs={}
@@ -282,6 +275,12 @@ class Dipole(object):
 
         Parameters
         ----------
+        QDM_data
+            Matrixfile, np.ndarray or np.matrix (Nx columns, Ny rows) containing
+            the QDM/scan data in T
+        cuboid_data
+            File, np.ndarray, or np.matrix (x, y, z, dx, dy, dz, index) containing
+            location and size grains in microm
         cuboid_scaling_factor
             Scaling factor for the cuboid positions and lengths
         tol
@@ -292,13 +291,20 @@ class Dipole(object):
             Extra arguments to the reader of cuboid files, e.g. `skiprows=2`
         """
 
-        # self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
-        # Use a faster reader, assuming the QDM file is separated by
-        # white spaces or another delimiter specified by reader_kwargs
-        self.QDM_matrix = loadtxt_iter(self.QDM_data,
-                                       **qdm_matrix_reader_kwargs)
-        np.multiply(self.QDM_matrix, self.QDM_area, out=self.QDM_matrix)
+        if isinstance(QDM_data, str):
+            # self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
+            # Use a faster reader, assuming the QDM file is separated by
+            # white spaces or another delimiter specified by reader_kwargs
+            self.QDM_matrix = loadtxt_iter(QDM_data, **qdm_matrix_reader_kwargs)
+            
+        elif isinstance(QDM_data, np.ndarray) or isinstance(QDM_data, np.matrix):
+            self.QDM_matrix = np.copy(QDM_data)
+            
+        else:
+            raise TypeError(f'Type {type(QDM_data)} is not recognized',
+                            'try str, np.ndarray or np.matrix')
 
+        np.multiply(self.QDM_matrix, self.QDM_area, out=self.QDM_matrix)
         # ---------------------------------------------------------------------
         # Set the limits of the QDM domain
 
@@ -308,13 +314,11 @@ class Dipole(object):
             print(f'QDM_domain[1, 0] has been reset from '
                   f'{self.QDM_domain[1, 0]} to {new_domain}.')
             self.QDM_domain[1, 0] = new_domain
-
         new_domain = self.QDM_domain[0, 1] + (self.Ny - 1) * self.QDM_spacing
         if abs(new_domain - self.QDM_domain[1, 1]) > tol:
             print(f'QDM_domain[1, 1] has been reset from '
                   f'{self.QDM_domain[1, 1]} to {new_domain}.')
             self.QDM_domain[1, 1] = new_domain
-
         if abs(self.QDM_deltax * self.QDM_deltay * 4 - self.QDM_area) > tol**2:
             print('The sensor is not a rectangle. '
                   'Calculation will probably go wrong here!')
@@ -322,9 +326,15 @@ class Dipole(object):
         # ---------------------------------------------------------------------
 
         # Read cuboid data in a 2D array
-        # self.cuboids = np.loadtxt(self.cuboid_data, ndmin=2)
-        # We are assuming here that cuboid file does not have comments
-        self.cuboids = loadtxt_iter(self.cuboid_data, **cuboids_reader_kwargs)
+        if isinstance(cuboid_data, str):
+            # self.cuboids = np.loadtxt(self.cuboid_data, ndmin=2)
+            # We are assuming here that cuboid file does not have comments
+            self.cuboids = loadtxt_iter(self.cuboid_data, **cuboids_reader_kwargs)
+        elif isinstance(cuboid_data, np.ndarray) or isinstance(cuboid_data, np.matrix):
+            self.cuboids = np.copy(cuboid_data)
+        else:
+            raise TypeError(f'Type {type(cuboid_data)} is not recognized',
+                            'try str, np.ndarray or np.matrix')
         self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
@@ -477,7 +487,59 @@ class Dipole(object):
 
         return None
 
+    def calculate_forward(self,
+                          cuboid_data: np.ndarray or np.matrix,
+                          dip_mag: np.ndarray or np.matrix,
+                          cuboid_scaling_factor: float,
+                          sigma: float = None,
+                          filepath: str = None):
+        """
+        A shortcut method to compute the forward magnetic field based on
+        the position and magnetization of the grains.
+        
+        Parameters
+        ----------
+        cuboid_data
+            np.ndarray or np.matrix (x, y, z, dx, dy, dz, index) containing
+            location and half size grains in microm
+        dip_mag
+            np.ndarray or np.matrix containing the magnetization per grain
+            in x, y, and z-direction. Shape: number of grains x 3
+        cuboid_scaling_factor
+            Scaling factor for the cuboid positions and lengths
+        sigma
+            Standard deviation of Gaussian noise to be added in T
+        filepath
+            Optional path to file to save the forward field
+
+        Returns
+        -------
+        Forward_field
+            Optionally return forward magnetic field if no filepath
+            is inputted
+        """
+        self.Mag = dip_mag.flatten()
+        self.cuboids = np.copy(cuboid_data)
+        self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor 
+
+        self.Npart = len(np.unique(self.cuboids[:, 6]))
+        self.Ncub = len(self.cuboids[:, 6])
+        self.Nx = int(
+            (self.QDM_domain[1, 0] - self.QDM_domain[0, 0]) / self.QDM_spacing) + 1
+        self.Ny = int(
+            (self.QDM_domain[1, 1] - self.QDM_domain[0, 1]) / self.QDM_spacing) + 1
+
+        # Start the methods
+        self.prepare_matrix()
+        if filepath is not None:
+            self.forward_field(forward_field, sigma=sigma)
+        else:
+            Forward_field = self.forward_field(sigma=sigma)
+            return Forward_field
+
     def obtain_magnetization(self,
+                             QDM_data: str or np.ndarray or np.matrix,
+                             cuboid_data: str or np.ndarray or np.matrix,
                              verbose: bool = True,
                              method_populate: _PrepMatOps = 'cython',
                              method_inverse: _MethodOps = 'scipy_pinv',
@@ -488,6 +550,12 @@ class Dipole(object):
 
         Parameters
         ----------
+        QDM_data
+            Matrixfile, np.ndarray or np.matrix (Nx columns, Ny rows) containing
+            the QDM/scan data in T
+        cuboid_data
+            File, np.ndarray, or np.matrix (x, y, z, dx, dy, dz, index) containing
+            location and size grains in microm
         method_populate
             Method to populate the forward matrix
         method_inverse
@@ -496,7 +564,7 @@ class Dipole(object):
             parameters
         """
 
-        self.read_files()
+        self.read_files(QDM_data, cuboid_data)
         self.prepare_matrix(method=method_populate, verbose=verbose)
         self.calculate_inverse(method=method_inverse,
                                **method_inverse_kwargs)
@@ -508,10 +576,13 @@ class Dipole(object):
         """
         Saves the magnetization to a specified Magfile file and the keys of the
         index of the particles in the keyfile file.
-
-        (to be removed)
-        An optional plot is produced if path_to_plot (string) is set.
-        colormap default set at coolwarm
+        
+        Parameters
+        ----------
+        Magfile
+            Path to file to save the magnetization
+        keyfile
+            Path to file to save the identification (key) of all grains
         """
 
         # WARNING: the old version did not save the indexes as 1st column:
@@ -527,3 +598,33 @@ class Dipole(object):
 
         np.savetxt(Magfile, data)
         np.savetxt(keyfile, p_idxs)
+
+    def forward_field(self,
+                      filepath: str = None,
+                      sigma: float = None):
+
+        """ Calculates the forward field
+
+        Parameters
+        ----------
+        filepath
+            Optional path to file to save the forward field
+        sigma
+            Standard deviation of Gaussian noise to be added in T
+
+        Returns
+        -------
+        Forward_field
+            Optionally return forward magnetic field if no filepath
+            is inputted
+        """
+
+        Forward_field = np.matmul(self.Forward_G, self.Mag) / self.QDM_area  # mag field
+        if sigma is not None:  # add Gaussian noise to the forward field
+            error = np.random.normal(0, sigma, len(Forward_field))
+            self.sigma = sigma * 4 * self.QDM_deltax * self.QDM_deltay  # originally it is a flux
+            Forward_field = Forward_field + error
+        if filepath is not None:
+            np.savetxt(filepath, Forward_field.reshape(self.Ny, self.Nx))
+        else:
+            return Forward_field.reshape(self.Ny, self.Nx)
