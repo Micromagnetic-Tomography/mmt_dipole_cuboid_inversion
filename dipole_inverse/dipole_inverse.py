@@ -329,12 +329,13 @@ class Dipole(object):
         if isinstance(cuboid_data, str):
             # self.cuboids = np.loadtxt(self.cuboid_data, ndmin=2)
             # We are assuming here that cuboid file does not have comments
-            self.cuboids = loadtxt_iter(self.cuboid_data, **cuboids_reader_kwargs)
+            self.cuboids = loadtxt_iter(cuboid_data, **cuboids_reader_kwargs)
         elif isinstance(cuboid_data, np.ndarray) or isinstance(cuboid_data, np.matrix):
             self.cuboids = np.copy(cuboid_data)
         else:
             raise TypeError(f'Type {type(cuboid_data)} is not recognized',
                             'try str, np.ndarray or np.matrix')
+
         self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
