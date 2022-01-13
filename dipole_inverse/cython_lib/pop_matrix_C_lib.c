@@ -58,7 +58,11 @@ void populate_matrix_C(double * G,
 
         // Loop over sensor measurements. Each sensor is in the xy
         // plane and has area delta^2
-        #pragma omp parallel for lastprivate(i_cuboid, i_particle) shared(i_cuboid_old, i_particle_prev)
+        // firstprivate: intialize vars with values outside the pragma for loop (see above)
+        // lastprivate : exit the loop with the last values
+        #pragma omp parallel for lastprivate(i_cuboid, i_particle) \
+                                 firstprivate(i_cuboid, i_particle) \
+                                 shared(i_cuboid_old, i_particle_prev)
         for (unsigned long long n = 0; n < Nx * Ny; n++) {
 
             // Definitions
