@@ -12,11 +12,14 @@ try:
 except ImportError:
     HASCUDA = False
 
+# Get this script location
+thisloc = Path(__file__).resolve().parent
+
 
 def test_dipole_class():
 
-    QDMfile = './single_dipole_depth_30_Bzgrid.txt'
-    cuboidfile = './single_dipole_depth_30_cuboids.txt'
+    QDMfile = thisloc / Path('./single_dipole_depth_30_Bzgrid.txt')
+    cuboidfile = thisloc / Path('./single_dipole_depth_30_cuboids.txt')
 
     # size of QDM domain
     QDM_domain = np.array([[0, 0], [40., 40.]]) * 1e-6
