@@ -2,7 +2,7 @@
 # for the current status of the build.py file in Poetry
 [tool.poetry]
 name = "dipole_inverse"
-version = "1.9"
+version = "2.0a"
 description = "Python lib to calculate dipole magnetization"
 authors = ["F. Out, D. Cortes, M. Kosters, K. Fabian, L. V. de Groot <f.out@students.uu.nl>"]
 license = "BSD-2-Clause"
@@ -33,7 +33,7 @@ cython = ">=0.29.26"
 python = ">=3.8,<3.10"
 numpy = "<1.22"
 numba = ">=0.52"
-scipy = ">=1.6"
+scipy = ">=1.7"
 descartes = ">=1.0"
 pathlib = ">=1.0"
 shapely = ">=1.7"
