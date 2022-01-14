@@ -291,20 +291,22 @@ class Dipole(object):
             Extra arguments to the reader of cuboid files, e.g. `skiprows=2`
         """
 
-        if isinstance(QDM_data, str):
-            # self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
-            # Use a faster reader, assuming the QDM file is separated by
-            # white spaces or another delimiter specified by reader_kwargs
-            self.QDM_matrix = loadtxt_iter(QDM_data, **qdm_matrix_reader_kwargs)
-            
-        elif isinstance(QDM_data, np.ndarray) or isinstance(QDM_data, np.matrix):
+        if isinstance(QDM_data, (np.ndarray, np.matrix)):
             self.QDM_matrix = np.copy(QDM_data)
-            
         else:
-            raise TypeError(f'Type {type(QDM_data)} is not recognized',
-                            'try str, np.ndarray or np.matrix')
+            try:
+                data_path = Path(QDM_data)
+                # self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
+                # Use a faster reader, assuming the QDM file is separated by
+                # white spaces or another delimiter specified by reader_kwargs
+                self.QDM_matrix = loadtxt_iter(data_path, **qdm_matrix_reader_kwargs)
+            except TypeError:
+                print(f'{QDM_data} is not a valid file name and cannot be loaded. '
+                        'You can also try an np.ndarray or np.matrix')
+                raise
 
         np.multiply(self.QDM_matrix, self.QDM_area, out=self.QDM_matrix)
+
         # ---------------------------------------------------------------------
         # Set the limits of the QDM domain
 
@@ -326,15 +328,18 @@ class Dipole(object):
         # ---------------------------------------------------------------------
 
         # Read cuboid data in a 2D array
-        if isinstance(cuboid_data, str):
-            # self.cuboids = np.loadtxt(self.cuboid_data, ndmin=2)
-            # We are assuming here that cuboid file does not have comments
-            self.cuboids = loadtxt_iter(cuboid_data, **cuboids_reader_kwargs)
-        elif isinstance(cuboid_data, np.ndarray) or isinstance(cuboid_data, np.matrix):
+        if isinstance(cuboid_data, (np.ndarray, np.matrix)):
             self.cuboids = np.copy(cuboid_data)
         else:
-            raise TypeError(f'Type {type(cuboid_data)} is not recognized',
-                            'try str, np.ndarray or np.matrix')
+            try:
+                cuboid_path = Path()
+                # self.cuboids = np.loadtxt(self.cuboid_data, ndmin=2)
+                # We are assuming here that cuboid file does not have comments
+                self.cuboids = loadtxt_iter(cuboid_data, **cuboids_reader_kwargs)
+            except TypeError:
+                print(f'{cuboid_data} is not a valid file name and cannot be loaded. '
+                       'You can also try an np.ndarray or np.matrix')
+                raise
 
         self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor
         self.Npart = len(np.unique(self.cuboids[:, 6]))
