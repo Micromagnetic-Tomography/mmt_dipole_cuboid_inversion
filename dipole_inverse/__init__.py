@@ -4,4 +4,4 @@ from . import cython_lib
 from . import plot_tools
 
 
-__version__ = importlib.metadata.version("mypackage")
+__version__ = importlib.metadata.version("dipole_inverse")
