@@ -498,7 +498,9 @@ class Dipole(object):
                           dip_mag: np.ndarray or np.matrix,
                           cuboid_scaling_factor: float,
                           sigma: float = None,
-                          filepath: str = None):
+                          filepath: str = None,
+                          verbose: bool = True,
+                          method_populate: _PrepMatOps = 'cython'):
         """
         A shortcut method to compute the forward magnetic field based on
         the position and magnetization of the grains.
@@ -517,6 +519,8 @@ class Dipole(object):
             Standard deviation of Gaussian noise to be added in T
         filepath
             Optional path to file to save the forward field
+        method_populate
+            Method to populate the forward matrix
 
         Returns
         -------
@@ -536,7 +540,7 @@ class Dipole(object):
             (self.QDM_domain[1, 1] - self.QDM_domain[0, 1]) / self.QDM_spacing) + 1
 
         # Start the methods
-        self.prepare_matrix()
+        self.prepare_matrix(method=method_populate, verbose=verbose)
         if filepath is not None:
             self.forward_field(forward_field, sigma=sigma)
         else:
@@ -546,6 +550,7 @@ class Dipole(object):
     def obtain_magnetization(self,
                              QDM_data: str or np.ndarray or np.matrix,
                              cuboid_data: str or np.ndarray or np.matrix,
+                             cuboid_scaling_factor: float,
                              verbose: bool = True,
                              method_populate: _PrepMatOps = 'cython',
                              method_inverse: _MethodOps = 'scipy_pinv',
@@ -562,6 +567,8 @@ class Dipole(object):
         cuboid_data
             File, np.ndarray, or np.matrix (x, y, z, dx, dy, dz, index) containing
             location and size grains in microm
+        cuboid_scaling_factor
+            Scaling factor for the cuboid positions and lengths
         method_populate
             Method to populate the forward matrix
         method_inverse
@@ -570,7 +577,7 @@ class Dipole(object):
             parameters
         """
 
-        self.read_files(QDM_data, cuboid_data)
+        self.read_files(QDM_data, cuboid_data, cuboid_scaling_factor)
         self.prepare_matrix(method=method_populate, verbose=verbose)
         self.calculate_inverse(method=method_inverse,
                                **method_inverse_kwargs)

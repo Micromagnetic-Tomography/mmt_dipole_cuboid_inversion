@@ -30,8 +30,8 @@ scan_height = 6e-6
 Magfile = data_path / "grain_mag.txt"
 
 mag_svd = dpinv.Dipole(
-    QDMfile, cuboidfile, QDM_domain, QDM_spacing,
-    QDM_deltax, QDM_deltay, QDM_area, sample_height,
+    QDM_domain, QDM_spacing, QDM_deltax,
+    QDM_deltay, QDM_area, sample_height,
     scan_height)
 
-mag_svd.obtain_magnetization(method_populate='cuda', verbose=False)
+mag_svd.obtain_magnetization(QDMfile, cuboidfile, 1e-6, method_populate='cython', verbose=False)
