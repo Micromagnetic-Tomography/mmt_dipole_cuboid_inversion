@@ -30,7 +30,7 @@ export CUDAHOME=/usr/local/cuda-11.5/
 
 ### Develop
 
-This library is built using the `poetry` library. After clonning the repository a `virtualenv` will be created automatically when running `poetry install`, unless you are already in a `virtualenv`, for example, creating one via `conda`. Within this environment it is possible to run and test the code using `poetry run`:
+This library is built using the `poetry` library. After cloning the repository a `virtualenv` will be created automatically when running `poetry install`, unless you are already in a `virtualenv`, for example, creating one via `conda`. Within this environment it is possible to run and test the code using `poetry run`:
 
 ```
 git clone https://github.com/Micromagnetic-Tomography/dipole_inverse
