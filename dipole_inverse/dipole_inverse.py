@@ -370,7 +370,9 @@ class Dipole(object):
             This can be limited using set_max_num_threads in the tools module
         """
 
-        self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
+        self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart),
+                                  dtype=np.double)
+
         if method == 'cython':
             # The Cython function populates the matrix column-wise via a 1D arr
             pop_matrix_lib.populate_matrix_cython(
@@ -384,7 +386,6 @@ class Dipole(object):
             if HASCUDA is False:
                 raise Exception('The cuda method is not available. Stopping calculation')
 
-            self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
             pop_matrix_cudalib.populate_matrix_cython(
                 self.Forward_G, self.QDM_domain[0], self.scan_height,
                 np.ravel(self.cuboids), self.Ncub,
@@ -393,7 +394,6 @@ class Dipole(object):
                 Origin, int(verbose))
 
         elif method == 'numba':
-            self.Forward_G = np.zeros((self.Nx * self.Ny, 3 * self.Npart))
             populate_matrix_numba(
                 self.Forward_G, self.QDM_domain, self.scan_height,
                 self.cuboids, self.Npart, self.Ny, self.Nx,
