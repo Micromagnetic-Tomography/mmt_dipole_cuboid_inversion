@@ -9,27 +9,46 @@
             "/home/5649404/.cache/pypoetry/virtualenvs/dipole-inverse-_r6uWddp-py3.8/lib/python3.8/site-packages/numpy/core/include/numpy/ndarrayobject.h",
             "/home/5649404/.cache/pypoetry/virtualenvs/dipole-inverse-_r6uWddp-py3.8/lib/python3.8/site-packages/numpy/core/include/numpy/ndarraytypes.h",
             "/home/5649404/.cache/pypoetry/virtualenvs/dipole-inverse-_r6uWddp-py3.8/lib/python3.8/site-packages/numpy/core/include/numpy/ufuncobject.h",
-            "dipole_inverse/cython_lib/pop_matrix_C_lib.h"
+            "dipole_inverse/cython_cuda_lib/pop_matrix_cuda_lib.h"
         ],
-        "extra_compile_args": [
-            "-std=c99",
-            "-O3",
-            "-fopenmp"
-        ],
-        "extra_link_args": [
-            "-fopenmp"
-        ],
+        "extra_compile_args": {
+            "gcc": [
+                "-std=c99",
+                "-O3",
+                "-fopenmp"
+            ],
+            "nvcc": [
+                "-arch=sm_75",
+                "--fmad=false",
+                "--ptxas-options=-v",
+                "-c",
+                "--compiler-options",
+                "'-fPIC'"
+            ]
+        },
         "include_dirs": [
-            "dipole_inverse/cython_lib",
-            "/home/5649404/.cache/pypoetry/virtualenvs/dipole-inverse-_r6uWddp-py3.8/lib/python3.8/site-packages/numpy/core/include"
+            "dipole_inverse/cython_cuda_lib",
+            "/home/5649404/.cache/pypoetry/virtualenvs/dipole-inverse-_r6uWddp-py3.8/lib/python3.8/site-packages/numpy/core/include",
+            "/usr/local/cuda-11.5/include",
+            "."
         ],
-        "name": "dipole_inverse.cython_lib.pop_matrix_lib",
+        "language": "c++",
+        "libraries": [
+            "cudart"
+        ],
+        "library_dirs": [
+            "/usr/local/cuda-11.5/lib64"
+        ],
+        "name": "dipole_inverse.cython_cuda_lib.pop_matrix_cudalib",
+        "runtime_library_dirs": [
+            "/usr/local/cuda-11.5/lib64"
+        ],
         "sources": [
-            "dipole_inverse/cython_lib/pop_matrix_lib.pyx",
-            "dipole_inverse/cython_lib/pop_matrix_C_lib.c"
+            "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx",
+            "dipole_inverse/cython_cuda_lib/pop_matrix_cuda_lib.cu"
         ]
     },
-    "module_name": "dipole_inverse.cython_lib.pop_matrix_lib"
+    "module_name": "dipole_inverse.cython_cuda_lib.pop_matrix_cudalib"
 }
 END: Cython Metadata */
 
@@ -321,19 +340,33 @@ END: Cython Metadata */
   #endif
 #endif
 
+#ifndef __cplusplus
+  #error "Cython files generated with the C++ option must be compiled with a C++ compiler."
+#endif
 #ifndef CYTHON_INLINE
   #if defined(__clang__)
     #define CYTHON_INLINE __inline__ __attribute__ ((__unused__))
-  #elif defined(__GNUC__)
-    #define CYTHON_INLINE __inline__
-  #elif defined(_MSC_VER)
-    #define CYTHON_INLINE __inline
-  #elif defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
-    #define CYTHON_INLINE inline
   #else
-    #define CYTHON_INLINE
+    #define CYTHON_INLINE inline
   #endif
 #endif
+template<typename T>
+void __Pyx_call_destructor(T& x) {
+    x.~T();
+}
+template<typename T>
+class __Pyx_FakeReference {
+  public:
+    __Pyx_FakeReference() : ptr(NULL) { }
+    __Pyx_FakeReference(const T& ref) : ptr(const_cast<T*>(&ref)) { }
+    T *operator->() { return ptr; }
+    T *operator&() { return ptr; }
+    operator T&() { return *ptr; }
+    template<typename U> bool operator ==(U other) { return *ptr == other; }
+    template<typename U> bool operator !=(U other) { return *ptr != other; }
+  private:
+    T *ptr;
+};
 
 #if CYTHON_COMPILING_IN_PYPY && PY_VERSION_HEX < 0x02070600 && !defined(Py_OptimizeFlag)
   #define Py_OptimizeFlag 0
@@ -706,8 +739,8 @@ static CYTHON_INLINE float __PYX_NAN() {
   #endif
 #endif
 
-#define __PYX_HAVE__dipole_inverse__cython_lib__pop_matrix_lib
-#define __PYX_HAVE_API__dipole_inverse__cython_lib__pop_matrix_lib
+#define __PYX_HAVE__dipole_inverse__cython_cuda_lib__pop_matrix_cudalib
+#define __PYX_HAVE_API__dipole_inverse__cython_cuda_lib__pop_matrix_cudalib
 /* Early includes */
 #include <string.h>
 #include <stdio.h>
@@ -719,9 +752,9 @@ static CYTHON_INLINE float __PYX_NAN() {
 
     /* NumPy API declarations from "numpy/__init__.pxd" */
     
-#include "pop_matrix_C_lib.h"
-#include "pythread.h"
 #include <stdlib.h>
+#include "pop_matrix_cuda_lib.h"
+#include "pythread.h"
 #include "pystate.h"
 #ifdef _OPENMP
 #include <omp.h>
@@ -954,7 +987,7 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "dipole_inverse/cython_lib/pop_matrix_lib.pyx",
+  "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx",
   "__init__.pxd",
   "stringsource",
   "type.pxd",
@@ -2227,7 +2260,9 @@ static PyTypeObject *__pyx_ptype_5numpy_flexible = 0;
 static PyTypeObject *__pyx_ptype_5numpy_character = 0;
 static PyTypeObject *__pyx_ptype_5numpy_ufunc = 0;
 
-/* Module declarations from 'dipole_inverse.cython_lib.pop_matrix_lib' */
+/* Module declarations from 'libc.stdlib' */
+
+/* Module declarations from 'dipole_inverse.cython_cuda_lib.pop_matrix_cudalib' */
 static PyTypeObject *__pyx_array_type = 0;
 static PyTypeObject *__pyx_MemviewEnum_type = 0;
 static PyTypeObject *__pyx_memoryview_type = 0;
@@ -2273,11 +2308,11 @@ static void __pyx_memoryview_slice_assign_scalar(__Pyx_memviewslice *, int, size
 static void __pyx_memoryview__slice_assign_scalar(char *, Py_ssize_t *, Py_ssize_t *, int, size_t, void *); /*proto*/
 static PyObject *__pyx_unpickle_Enum__set_state(struct __pyx_MemviewEnum_obj *, PyObject *); /*proto*/
 static __Pyx_TypeInfo __Pyx_TypeInfo_double = { "double", NULL, sizeof(double), { 0 }, 0, 'R', 0, 0 };
-#define __Pyx_MODULE_NAME "dipole_inverse.cython_lib.pop_matrix_lib"
-extern int __pyx_module_is_main_dipole_inverse__cython_lib__pop_matrix_lib;
-int __pyx_module_is_main_dipole_inverse__cython_lib__pop_matrix_lib = 0;
+#define __Pyx_MODULE_NAME "dipole_inverse.cython_cuda_lib.pop_matrix_cudalib"
+extern int __pyx_module_is_main_dipole_inverse__cython_cuda_lib__pop_matrix_cudalib;
+int __pyx_module_is_main_dipole_inverse__cython_cuda_lib__pop_matrix_cudalib = 0;
 
-/* Implementation of 'dipole_inverse.cython_lib.pop_matrix_lib' */
+/* Implementation of 'dipole_inverse.cython_cuda_lib.pop_matrix_cudalib' */
 static PyObject *__pyx_builtin_ImportError;
 static PyObject *__pyx_builtin_ValueError;
 static PyObject *__pyx_builtin_MemoryError;
@@ -2293,6 +2328,7 @@ static const char __pyx_k_c[] = "c";
 static const char __pyx_k_Nx[] = "Nx";
 static const char __pyx_k_Ny[] = "Ny";
 static const char __pyx_k_id[] = "id";
+static const char __pyx_k_np[] = "np";
 static const char __pyx_k_new[] = "__new__";
 static const char __pyx_k_obj[] = "obj";
 static const char __pyx_k_base[] = "base";
@@ -2311,6 +2347,7 @@ static const char __pyx_k_Npart[] = "Npart";
 static const char __pyx_k_class[] = "__class__";
 static const char __pyx_k_error[] = "error";
 static const char __pyx_k_flags[] = "flags";
+static const char __pyx_k_numpy[] = "numpy";
 static const char __pyx_k_range[] = "range";
 static const char __pyx_k_shape[] = "shape";
 static const char __pyx_k_start[] = "start";
@@ -2384,12 +2421,12 @@ static const char __pyx_k_Indirect_dimensions_not_supporte[] = "Indirect dimensi
 static const char __pyx_k_Invalid_mode_expected_c_or_fortr[] = "Invalid mode, expected 'c' or 'fortran', got %s";
 static const char __pyx_k_Out_of_bounds_on_buffer_access_a[] = "Out of bounds on buffer access (axis %d)";
 static const char __pyx_k_Unable_to_convert_item_to_object[] = "Unable to convert item to object";
-static const char __pyx_k_dipole_inverse_cython_lib_pop_ma[] = "dipole_inverse/cython_lib/pop_matrix_lib.pyx";
+static const char __pyx_k_dipole_inverse_cython_cuda_lib_p[] = "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx";
 static const char __pyx_k_got_differing_extents_in_dimensi[] = "got differing extents in dimension %d (got %d and %d)";
 static const char __pyx_k_no_default___reduce___due_to_non[] = "no default __reduce__ due to non-trivial __cinit__";
 static const char __pyx_k_numpy_core_umath_failed_to_impor[] = "numpy.core.umath failed to import";
 static const char __pyx_k_unable_to_allocate_shape_and_str[] = "unable to allocate shape and strides.";
-static const char __pyx_k_dipole_inverse_cython_lib_pop_ma_2[] = "dipole_inverse.cython_lib.pop_matrix_lib";
+static const char __pyx_k_dipole_inverse_cython_cuda_lib_p_2[] = "dipole_inverse.cython_cuda_lib.pop_matrix_cudalib";
 static PyObject *__pyx_n_s_ASCII;
 static PyObject *__pyx_kp_s_Buffer_view_does_not_expose_stri;
 static PyObject *__pyx_kp_s_Can_only_create_a_buffer_that_is;
@@ -2434,8 +2471,8 @@ static PyObject *__pyx_kp_s_contiguous_and_direct;
 static PyObject *__pyx_kp_s_contiguous_and_indirect;
 static PyObject *__pyx_n_s_cuboids;
 static PyObject *__pyx_n_s_dict;
-static PyObject *__pyx_kp_s_dipole_inverse_cython_lib_pop_ma;
-static PyObject *__pyx_n_s_dipole_inverse_cython_lib_pop_ma_2;
+static PyObject *__pyx_kp_s_dipole_inverse_cython_cuda_lib_p;
+static PyObject *__pyx_n_s_dipole_inverse_cython_cuda_lib_p_2;
 static PyObject *__pyx_n_s_dtype_is_object;
 static PyObject *__pyx_n_s_encode;
 static PyObject *__pyx_n_s_enumerate;
@@ -2458,6 +2495,8 @@ static PyObject *__pyx_n_s_name_2;
 static PyObject *__pyx_n_s_ndim;
 static PyObject *__pyx_n_s_new;
 static PyObject *__pyx_kp_s_no_default___reduce___due_to_non;
+static PyObject *__pyx_n_s_np;
+static PyObject *__pyx_n_s_numpy;
 static PyObject *__pyx_kp_u_numpy_core_multiarray_failed_to;
 static PyObject *__pyx_kp_u_numpy_core_umath_failed_to_impor;
 static PyObject *__pyx_n_s_obj;
@@ -2495,7 +2534,7 @@ static PyObject *__pyx_kp_s_unable_to_allocate_shape_and_str;
 static PyObject *__pyx_n_s_unpack;
 static PyObject *__pyx_n_s_update;
 static PyObject *__pyx_n_s_verbose;
-static PyObject *__pyx_pf_14dipole_inverse_10cython_lib_14pop_matrix_lib_populate_matrix_cython(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_G, __Pyx_memviewslice __pyx_v_QDM_domain, double __pyx_v_scan_height, __Pyx_memviewslice __pyx_v_cuboids, unsigned PY_LONG_LONG __pyx_v_N_cuboids, unsigned PY_LONG_LONG __pyx_v_Npart, unsigned PY_LONG_LONG __pyx_v_Ny, unsigned PY_LONG_LONG __pyx_v_Nx, double __pyx_v_QDM_spacing, double __pyx_v_QDM_deltax, double __pyx_v_QDM_deltay, int __pyx_v_Origin, int __pyx_v_verbose); /* proto */
+static PyObject *__pyx_pf_14dipole_inverse_15cython_cuda_lib_18pop_matrix_cudalib_populate_matrix_cython(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_G, __Pyx_memviewslice __pyx_v_QDM_domain, double __pyx_v_scan_height, __Pyx_memviewslice __pyx_v_cuboids, unsigned PY_LONG_LONG __pyx_v_N_cuboids, unsigned PY_LONG_LONG __pyx_v_Npart, unsigned PY_LONG_LONG __pyx_v_Ny, unsigned PY_LONG_LONG __pyx_v_Nx, double __pyx_v_QDM_spacing, double __pyx_v_QDM_deltax, double __pyx_v_QDM_deltay, int __pyx_v_Origin, int __pyx_v_verbose); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __pyx_array_obj *__pyx_v_self, PyObject *__pyx_v_shape, Py_ssize_t __pyx_v_itemsize, PyObject *__pyx_v_format, PyObject *__pyx_v_mode, int __pyx_v_allocate_buffer); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array_2__getbuffer__(struct __pyx_array_obj *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_array___pyx_pf_15View_dot_MemoryView_5array_4__dealloc__(struct __pyx_array_obj *__pyx_v_self); /* proto */
@@ -2577,7 +2616,7 @@ static PyObject *__pyx_codeobj__22;
 static PyObject *__pyx_codeobj__29;
 /* Late includes */
 
-/* "dipole_inverse/cython_lib/pop_matrix_lib.pyx":19
+/* "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx":22
  * # -----------------------------------------------------------------------------
  * 
  * def populate_matrix_cython(double [:, :] G,             # <<<<<<<<<<<<<<
@@ -2586,9 +2625,9 @@ static PyObject *__pyx_codeobj__29;
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_14dipole_inverse_10cython_lib_14pop_matrix_lib_1populate_matrix_cython(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_14dipole_inverse_10cython_lib_14pop_matrix_lib_1populate_matrix_cython = {"populate_matrix_cython", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_14dipole_inverse_10cython_lib_14pop_matrix_lib_1populate_matrix_cython, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_14dipole_inverse_10cython_lib_14pop_matrix_lib_1populate_matrix_cython(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_14dipole_inverse_15cython_cuda_lib_18pop_matrix_cudalib_1populate_matrix_cython(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_14dipole_inverse_15cython_cuda_lib_18pop_matrix_cudalib_1populate_matrix_cython = {"populate_matrix_cython", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_14dipole_inverse_15cython_cuda_lib_18pop_matrix_cudalib_1populate_matrix_cython, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_14dipole_inverse_15cython_cuda_lib_18pop_matrix_cudalib_1populate_matrix_cython(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_G = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_QDM_domain = { 0, 0, { 0 }, { 0 }, { 0 } };
   double __pyx_v_scan_height;
@@ -2653,77 +2692,77 @@ static PyObject *__pyx_pw_14dipole_inverse_10cython_lib_14pop_matrix_lib_1popula
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_QDM_domain)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 1); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 1); __PYX_ERR(0, 22, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_scan_height)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 2); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 2); __PYX_ERR(0, 22, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_cuboids)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 3); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 3); __PYX_ERR(0, 22, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_N_cuboids)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 4); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 4); __PYX_ERR(0, 22, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  5:
         if (likely((values[5] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_Npart)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 5); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 5); __PYX_ERR(0, 22, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  6:
         if (likely((values[6] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_Ny)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 6); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 6); __PYX_ERR(0, 22, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  7:
         if (likely((values[7] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_Nx)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 7); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 7); __PYX_ERR(0, 22, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  8:
         if (likely((values[8] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_QDM_spacing)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 8); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 8); __PYX_ERR(0, 22, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  9:
         if (likely((values[9] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_QDM_deltax)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 9); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 9); __PYX_ERR(0, 22, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 10:
         if (likely((values[10] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_QDM_deltay)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 10); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 10); __PYX_ERR(0, 22, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 11:
         if (likely((values[11] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_Origin)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 11); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 11); __PYX_ERR(0, 22, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 12:
         if (likely((values[12] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_verbose)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 12); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, 12); __PYX_ERR(0, 22, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "populate_matrix_cython") < 0)) __PYX_ERR(0, 19, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "populate_matrix_cython") < 0)) __PYX_ERR(0, 22, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 13) {
       goto __pyx_L5_argtuple_error;
@@ -2742,36 +2781,36 @@ static PyObject *__pyx_pw_14dipole_inverse_10cython_lib_14pop_matrix_lib_1popula
       values[11] = PyTuple_GET_ITEM(__pyx_args, 11);
       values[12] = PyTuple_GET_ITEM(__pyx_args, 12);
     }
-    __pyx_v_G = __Pyx_PyObject_to_MemoryviewSlice_dsds_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_G.memview)) __PYX_ERR(0, 19, __pyx_L3_error)
-    __pyx_v_QDM_domain = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_QDM_domain.memview)) __PYX_ERR(0, 20, __pyx_L3_error)
-    __pyx_v_scan_height = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_scan_height == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 21, __pyx_L3_error)
-    __pyx_v_cuboids = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_cuboids.memview)) __PYX_ERR(0, 22, __pyx_L3_error)
-    __pyx_v_N_cuboids = __Pyx_PyInt_As_unsigned_PY_LONG_LONG(values[4]); if (unlikely((__pyx_v_N_cuboids == (unsigned PY_LONG_LONG)-1) && PyErr_Occurred())) __PYX_ERR(0, 23, __pyx_L3_error)
-    __pyx_v_Npart = __Pyx_PyInt_As_unsigned_PY_LONG_LONG(values[5]); if (unlikely((__pyx_v_Npart == (unsigned PY_LONG_LONG)-1) && PyErr_Occurred())) __PYX_ERR(0, 24, __pyx_L3_error)
-    __pyx_v_Ny = __Pyx_PyInt_As_unsigned_PY_LONG_LONG(values[6]); if (unlikely((__pyx_v_Ny == (unsigned PY_LONG_LONG)-1) && PyErr_Occurred())) __PYX_ERR(0, 25, __pyx_L3_error)
-    __pyx_v_Nx = __Pyx_PyInt_As_unsigned_PY_LONG_LONG(values[7]); if (unlikely((__pyx_v_Nx == (unsigned PY_LONG_LONG)-1) && PyErr_Occurred())) __PYX_ERR(0, 25, __pyx_L3_error)
-    __pyx_v_QDM_spacing = __pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_QDM_spacing == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 26, __pyx_L3_error)
-    __pyx_v_QDM_deltax = __pyx_PyFloat_AsDouble(values[9]); if (unlikely((__pyx_v_QDM_deltax == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 27, __pyx_L3_error)
-    __pyx_v_QDM_deltay = __pyx_PyFloat_AsDouble(values[10]); if (unlikely((__pyx_v_QDM_deltay == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 27, __pyx_L3_error)
-    __pyx_v_Origin = __Pyx_PyInt_As_int(values[11]); if (unlikely((__pyx_v_Origin == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 28, __pyx_L3_error)
-    __pyx_v_verbose = __Pyx_PyInt_As_int(values[12]); if (unlikely((__pyx_v_verbose == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 28, __pyx_L3_error)
+    __pyx_v_G = __Pyx_PyObject_to_MemoryviewSlice_dsds_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_G.memview)) __PYX_ERR(0, 22, __pyx_L3_error)
+    __pyx_v_QDM_domain = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_QDM_domain.memview)) __PYX_ERR(0, 23, __pyx_L3_error)
+    __pyx_v_scan_height = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_scan_height == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 24, __pyx_L3_error)
+    __pyx_v_cuboids = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_cuboids.memview)) __PYX_ERR(0, 25, __pyx_L3_error)
+    __pyx_v_N_cuboids = __Pyx_PyInt_As_unsigned_PY_LONG_LONG(values[4]); if (unlikely((__pyx_v_N_cuboids == (unsigned PY_LONG_LONG)-1) && PyErr_Occurred())) __PYX_ERR(0, 26, __pyx_L3_error)
+    __pyx_v_Npart = __Pyx_PyInt_As_unsigned_PY_LONG_LONG(values[5]); if (unlikely((__pyx_v_Npart == (unsigned PY_LONG_LONG)-1) && PyErr_Occurred())) __PYX_ERR(0, 27, __pyx_L3_error)
+    __pyx_v_Ny = __Pyx_PyInt_As_unsigned_PY_LONG_LONG(values[6]); if (unlikely((__pyx_v_Ny == (unsigned PY_LONG_LONG)-1) && PyErr_Occurred())) __PYX_ERR(0, 28, __pyx_L3_error)
+    __pyx_v_Nx = __Pyx_PyInt_As_unsigned_PY_LONG_LONG(values[7]); if (unlikely((__pyx_v_Nx == (unsigned PY_LONG_LONG)-1) && PyErr_Occurred())) __PYX_ERR(0, 28, __pyx_L3_error)
+    __pyx_v_QDM_spacing = __pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_QDM_spacing == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 29, __pyx_L3_error)
+    __pyx_v_QDM_deltax = __pyx_PyFloat_AsDouble(values[9]); if (unlikely((__pyx_v_QDM_deltax == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 30, __pyx_L3_error)
+    __pyx_v_QDM_deltay = __pyx_PyFloat_AsDouble(values[10]); if (unlikely((__pyx_v_QDM_deltay == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 30, __pyx_L3_error)
+    __pyx_v_Origin = __Pyx_PyInt_As_int(values[11]); if (unlikely((__pyx_v_Origin == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 31, __pyx_L3_error)
+    __pyx_v_verbose = __Pyx_PyInt_As_int(values[12]); if (unlikely((__pyx_v_verbose == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 31, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 19, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("populate_matrix_cython", 1, 13, 13, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 22, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("dipole_inverse.cython_lib.pop_matrix_lib.populate_matrix_cython", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("dipole_inverse.cython_cuda_lib.pop_matrix_cudalib.populate_matrix_cython", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_14dipole_inverse_10cython_lib_14pop_matrix_lib_populate_matrix_cython(__pyx_self, __pyx_v_G, __pyx_v_QDM_domain, __pyx_v_scan_height, __pyx_v_cuboids, __pyx_v_N_cuboids, __pyx_v_Npart, __pyx_v_Ny, __pyx_v_Nx, __pyx_v_QDM_spacing, __pyx_v_QDM_deltax, __pyx_v_QDM_deltay, __pyx_v_Origin, __pyx_v_verbose);
+  __pyx_r = __pyx_pf_14dipole_inverse_15cython_cuda_lib_18pop_matrix_cudalib_populate_matrix_cython(__pyx_self, __pyx_v_G, __pyx_v_QDM_domain, __pyx_v_scan_height, __pyx_v_cuboids, __pyx_v_N_cuboids, __pyx_v_Npart, __pyx_v_Ny, __pyx_v_Nx, __pyx_v_QDM_spacing, __pyx_v_QDM_deltax, __pyx_v_QDM_deltay, __pyx_v_Origin, __pyx_v_verbose);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_14dipole_inverse_10cython_lib_14pop_matrix_lib_populate_matrix_cython(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_G, __Pyx_memviewslice __pyx_v_QDM_domain, double __pyx_v_scan_height, __Pyx_memviewslice __pyx_v_cuboids, unsigned PY_LONG_LONG __pyx_v_N_cuboids, unsigned PY_LONG_LONG __pyx_v_Npart, unsigned PY_LONG_LONG __pyx_v_Ny, unsigned PY_LONG_LONG __pyx_v_Nx, double __pyx_v_QDM_spacing, double __pyx_v_QDM_deltax, double __pyx_v_QDM_deltay, int __pyx_v_Origin, int __pyx_v_verbose) {
+static PyObject *__pyx_pf_14dipole_inverse_15cython_cuda_lib_18pop_matrix_cudalib_populate_matrix_cython(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_G, __Pyx_memviewslice __pyx_v_QDM_domain, double __pyx_v_scan_height, __Pyx_memviewslice __pyx_v_cuboids, unsigned PY_LONG_LONG __pyx_v_N_cuboids, unsigned PY_LONG_LONG __pyx_v_Npart, unsigned PY_LONG_LONG __pyx_v_Ny, unsigned PY_LONG_LONG __pyx_v_Nx, double __pyx_v_QDM_spacing, double __pyx_v_QDM_deltax, double __pyx_v_QDM_deltay, int __pyx_v_Origin, int __pyx_v_verbose) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   Py_ssize_t __pyx_t_1;
@@ -2784,12 +2823,12 @@ static PyObject *__pyx_pf_14dipole_inverse_10cython_lib_14pop_matrix_lib_populat
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("populate_matrix_cython", 0);
 
-  /* "dipole_inverse/cython_lib/pop_matrix_lib.pyx":31
+  /* "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx":34
  * 
- *     # I guess G is passed as a column-order (C) 1D array to the C code
- *     populate_matrix_C(&G[0, 0],             # <<<<<<<<<<<<<<
- *                       &QDM_domain[0], scan_height,
- *                       &cuboids[0], N_cuboids, Npart,
+ *     # Call the C function
+ *     populate_matrix_cuda(&G[0, 0],             # <<<<<<<<<<<<<<
+ *                          &QDM_domain[0], scan_height,
+ *                          &cuboids[0], N_cuboids, Npart,
  */
   __pyx_t_1 = 0;
   __pyx_t_2 = 0;
@@ -2804,15 +2843,15 @@ static PyObject *__pyx_pf_14dipole_inverse_10cython_lib_14pop_matrix_lib_populat
   } else if (unlikely(__pyx_t_2 >= __pyx_v_G.shape[1])) __pyx_t_3 = 1;
   if (unlikely(__pyx_t_3 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_3);
-    __PYX_ERR(0, 31, __pyx_L1_error)
+    __PYX_ERR(0, 34, __pyx_L1_error)
   }
 
-  /* "dipole_inverse/cython_lib/pop_matrix_lib.pyx":32
- *     # I guess G is passed as a column-order (C) 1D array to the C code
- *     populate_matrix_C(&G[0, 0],
- *                       &QDM_domain[0], scan_height,             # <<<<<<<<<<<<<<
- *                       &cuboids[0], N_cuboids, Npart,
- *                       Ny, Nx, QDM_spacing,
+  /* "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx":35
+ *     # Call the C function
+ *     populate_matrix_cuda(&G[0, 0],
+ *                          &QDM_domain[0], scan_height,             # <<<<<<<<<<<<<<
+ *                          &cuboids[0], N_cuboids, Npart,
+ *                          Ny, Nx, QDM_spacing,
  */
   __pyx_t_4 = 0;
   __pyx_t_3 = -1;
@@ -2822,15 +2861,15 @@ static PyObject *__pyx_pf_14dipole_inverse_10cython_lib_14pop_matrix_lib_populat
   } else if (unlikely(__pyx_t_4 >= __pyx_v_QDM_domain.shape[0])) __pyx_t_3 = 0;
   if (unlikely(__pyx_t_3 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_3);
-    __PYX_ERR(0, 32, __pyx_L1_error)
+    __PYX_ERR(0, 35, __pyx_L1_error)
   }
 
-  /* "dipole_inverse/cython_lib/pop_matrix_lib.pyx":33
- *     populate_matrix_C(&G[0, 0],
- *                       &QDM_domain[0], scan_height,
- *                       &cuboids[0], N_cuboids, Npart,             # <<<<<<<<<<<<<<
- *                       Ny, Nx, QDM_spacing,
- *                       QDM_deltax, QDM_deltay,
+  /* "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx":36
+ *     populate_matrix_cuda(&G[0, 0],
+ *                          &QDM_domain[0], scan_height,
+ *                          &cuboids[0], N_cuboids, Npart,             # <<<<<<<<<<<<<<
+ *                          Ny, Nx, QDM_spacing,
+ *                          QDM_deltax, QDM_deltay,
  */
   __pyx_t_5 = 0;
   __pyx_t_3 = -1;
@@ -2840,19 +2879,19 @@ static PyObject *__pyx_pf_14dipole_inverse_10cython_lib_14pop_matrix_lib_populat
   } else if (unlikely(__pyx_t_5 >= __pyx_v_cuboids.shape[0])) __pyx_t_3 = 0;
   if (unlikely(__pyx_t_3 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_3);
-    __PYX_ERR(0, 33, __pyx_L1_error)
+    __PYX_ERR(0, 36, __pyx_L1_error)
   }
 
-  /* "dipole_inverse/cython_lib/pop_matrix_lib.pyx":31
+  /* "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx":34
  * 
- *     # I guess G is passed as a column-order (C) 1D array to the C code
- *     populate_matrix_C(&G[0, 0],             # <<<<<<<<<<<<<<
- *                       &QDM_domain[0], scan_height,
- *                       &cuboids[0], N_cuboids, Npart,
+ *     # Call the C function
+ *     populate_matrix_cuda(&G[0, 0],             # <<<<<<<<<<<<<<
+ *                          &QDM_domain[0], scan_height,
+ *                          &cuboids[0], N_cuboids, Npart,
  */
-  populate_matrix_C((&(*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_G.data + __pyx_t_1 * __pyx_v_G.strides[0]) ) + __pyx_t_2 * __pyx_v_G.strides[1]) )))), (&(*((double *) ( /* dim=0 */ (__pyx_v_QDM_domain.data + __pyx_t_4 * __pyx_v_QDM_domain.strides[0]) )))), __pyx_v_scan_height, (&(*((double *) ( /* dim=0 */ (__pyx_v_cuboids.data + __pyx_t_5 * __pyx_v_cuboids.strides[0]) )))), __pyx_v_N_cuboids, __pyx_v_Npart, __pyx_v_Ny, __pyx_v_Nx, __pyx_v_QDM_spacing, __pyx_v_QDM_deltax, __pyx_v_QDM_deltay, __pyx_v_Origin, __pyx_v_verbose);
+  populate_matrix_cuda((&(*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_G.data + __pyx_t_1 * __pyx_v_G.strides[0]) ) + __pyx_t_2 * __pyx_v_G.strides[1]) )))), (&(*((double *) ( /* dim=0 */ (__pyx_v_QDM_domain.data + __pyx_t_4 * __pyx_v_QDM_domain.strides[0]) )))), __pyx_v_scan_height, (&(*((double *) ( /* dim=0 */ (__pyx_v_cuboids.data + __pyx_t_5 * __pyx_v_cuboids.strides[0]) )))), __pyx_v_N_cuboids, __pyx_v_Npart, __pyx_v_Ny, __pyx_v_Nx, __pyx_v_QDM_spacing, __pyx_v_QDM_deltax, __pyx_v_QDM_deltay, __pyx_v_Origin, __pyx_v_verbose);
 
-  /* "dipole_inverse/cython_lib/pop_matrix_lib.pyx":19
+  /* "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx":22
  * # -----------------------------------------------------------------------------
  * 
  * def populate_matrix_cython(double [:, :] G,             # <<<<<<<<<<<<<<
@@ -2864,7 +2903,7 @@ static PyObject *__pyx_pf_14dipole_inverse_10cython_lib_14pop_matrix_lib_populat
   __pyx_r = Py_None; __Pyx_INCREF(Py_None);
   goto __pyx_L0;
   __pyx_L1_error:;
-  __Pyx_AddTraceback("dipole_inverse.cython_lib.pop_matrix_lib.populate_matrix_cython", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("dipole_inverse.cython_cuda_lib.pop_matrix_cudalib.populate_matrix_cython", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_G, 1);
@@ -17032,7 +17071,7 @@ static PyBufferProcs __pyx_tp_as_buffer_array = {
 
 static PyTypeObject __pyx_type___pyx_array = {
   PyVarObject_HEAD_INIT(0, 0)
-  "dipole_inverse.cython_lib.pop_matrix_lib.array", /*tp_name*/
+  "dipole_inverse.cython_cuda_lib.pop_matrix_cudalib.array", /*tp_name*/
   sizeof(struct __pyx_array_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc_array, /*tp_dealloc*/
@@ -17154,7 +17193,7 @@ static PyMethodDef __pyx_methods_Enum[] = {
 
 static PyTypeObject __pyx_type___pyx_MemviewEnum = {
   PyVarObject_HEAD_INIT(0, 0)
-  "dipole_inverse.cython_lib.pop_matrix_lib.Enum", /*tp_name*/
+  "dipole_inverse.cython_cuda_lib.pop_matrix_cudalib.Enum", /*tp_name*/
   sizeof(struct __pyx_MemviewEnum_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc_Enum, /*tp_dealloc*/
@@ -17418,7 +17457,7 @@ static PyBufferProcs __pyx_tp_as_buffer_memoryview = {
 
 static PyTypeObject __pyx_type___pyx_memoryview = {
   PyVarObject_HEAD_INIT(0, 0)
-  "dipole_inverse.cython_lib.pop_matrix_lib.memoryview", /*tp_name*/
+  "dipole_inverse.cython_cuda_lib.pop_matrix_cudalib.memoryview", /*tp_name*/
   sizeof(struct __pyx_memoryview_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc_memoryview, /*tp_dealloc*/
@@ -17559,7 +17598,7 @@ static struct PyGetSetDef __pyx_getsets__memoryviewslice[] = {
 
 static PyTypeObject __pyx_type___pyx_memoryviewslice = {
   PyVarObject_HEAD_INIT(0, 0)
-  "dipole_inverse.cython_lib.pop_matrix_lib._memoryviewslice", /*tp_name*/
+  "dipole_inverse.cython_cuda_lib.pop_matrix_cudalib._memoryviewslice", /*tp_name*/
   sizeof(struct __pyx_memoryviewslice_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc__memoryviewslice, /*tp_dealloc*/
@@ -17644,17 +17683,17 @@ static PyMethodDef __pyx_methods[] = {
 #if PY_MAJOR_VERSION >= 3
 #if CYTHON_PEP489_MULTI_PHASE_INIT
 static PyObject* __pyx_pymod_create(PyObject *spec, PyModuleDef *def); /*proto*/
-static int __pyx_pymod_exec_pop_matrix_lib(PyObject* module); /*proto*/
+static int __pyx_pymod_exec_pop_matrix_cudalib(PyObject* module); /*proto*/
 static PyModuleDef_Slot __pyx_moduledef_slots[] = {
   {Py_mod_create, (void*)__pyx_pymod_create},
-  {Py_mod_exec, (void*)__pyx_pymod_exec_pop_matrix_lib},
+  {Py_mod_exec, (void*)__pyx_pymod_exec_pop_matrix_cudalib},
   {0, NULL}
 };
 #endif
 
 static struct PyModuleDef __pyx_moduledef = {
     PyModuleDef_HEAD_INIT,
-    "pop_matrix_lib",
+    "pop_matrix_cudalib",
     0, /* m_doc */
   #if CYTHON_PEP489_MULTI_PHASE_INIT
     0, /* m_size */
@@ -17727,8 +17766,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_contiguous_and_indirect, __pyx_k_contiguous_and_indirect, sizeof(__pyx_k_contiguous_and_indirect), 0, 0, 1, 0},
   {&__pyx_n_s_cuboids, __pyx_k_cuboids, sizeof(__pyx_k_cuboids), 0, 0, 1, 1},
   {&__pyx_n_s_dict, __pyx_k_dict, sizeof(__pyx_k_dict), 0, 0, 1, 1},
-  {&__pyx_kp_s_dipole_inverse_cython_lib_pop_ma, __pyx_k_dipole_inverse_cython_lib_pop_ma, sizeof(__pyx_k_dipole_inverse_cython_lib_pop_ma), 0, 0, 1, 0},
-  {&__pyx_n_s_dipole_inverse_cython_lib_pop_ma_2, __pyx_k_dipole_inverse_cython_lib_pop_ma_2, sizeof(__pyx_k_dipole_inverse_cython_lib_pop_ma_2), 0, 0, 1, 1},
+  {&__pyx_kp_s_dipole_inverse_cython_cuda_lib_p, __pyx_k_dipole_inverse_cython_cuda_lib_p, sizeof(__pyx_k_dipole_inverse_cython_cuda_lib_p), 0, 0, 1, 0},
+  {&__pyx_n_s_dipole_inverse_cython_cuda_lib_p_2, __pyx_k_dipole_inverse_cython_cuda_lib_p_2, sizeof(__pyx_k_dipole_inverse_cython_cuda_lib_p_2), 0, 0, 1, 1},
   {&__pyx_n_s_dtype_is_object, __pyx_k_dtype_is_object, sizeof(__pyx_k_dtype_is_object), 0, 0, 1, 1},
   {&__pyx_n_s_encode, __pyx_k_encode, sizeof(__pyx_k_encode), 0, 0, 1, 1},
   {&__pyx_n_s_enumerate, __pyx_k_enumerate, sizeof(__pyx_k_enumerate), 0, 0, 1, 1},
@@ -17751,6 +17790,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_ndim, __pyx_k_ndim, sizeof(__pyx_k_ndim), 0, 0, 1, 1},
   {&__pyx_n_s_new, __pyx_k_new, sizeof(__pyx_k_new), 0, 0, 1, 1},
   {&__pyx_kp_s_no_default___reduce___due_to_non, __pyx_k_no_default___reduce___due_to_non, sizeof(__pyx_k_no_default___reduce___due_to_non), 0, 0, 1, 0},
+  {&__pyx_n_s_np, __pyx_k_np, sizeof(__pyx_k_np), 0, 0, 1, 1},
+  {&__pyx_n_s_numpy, __pyx_k_numpy, sizeof(__pyx_k_numpy), 0, 0, 1, 1},
   {&__pyx_kp_u_numpy_core_multiarray_failed_to, __pyx_k_numpy_core_multiarray_failed_to, sizeof(__pyx_k_numpy_core_multiarray_failed_to), 0, 1, 0, 0},
   {&__pyx_kp_u_numpy_core_umath_failed_to_impor, __pyx_k_numpy_core_umath_failed_to_impor, sizeof(__pyx_k_numpy_core_umath_failed_to_impor), 0, 1, 0, 0},
   {&__pyx_n_s_obj, __pyx_k_obj, sizeof(__pyx_k_obj), 0, 0, 1, 1},
@@ -18023,17 +18064,17 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__20);
   __Pyx_GIVEREF(__pyx_tuple__20);
 
-  /* "dipole_inverse/cython_lib/pop_matrix_lib.pyx":19
+  /* "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx":22
  * # -----------------------------------------------------------------------------
  * 
  * def populate_matrix_cython(double [:, :] G,             # <<<<<<<<<<<<<<
  *                            double [:] QDM_domain,
  *                            double scan_height,
  */
-  __pyx_tuple__21 = PyTuple_Pack(13, __pyx_n_s_G, __pyx_n_s_QDM_domain, __pyx_n_s_scan_height, __pyx_n_s_cuboids, __pyx_n_s_N_cuboids, __pyx_n_s_Npart, __pyx_n_s_Ny, __pyx_n_s_Nx, __pyx_n_s_QDM_spacing, __pyx_n_s_QDM_deltax, __pyx_n_s_QDM_deltay, __pyx_n_s_Origin, __pyx_n_s_verbose); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_tuple__21 = PyTuple_Pack(13, __pyx_n_s_G, __pyx_n_s_QDM_domain, __pyx_n_s_scan_height, __pyx_n_s_cuboids, __pyx_n_s_N_cuboids, __pyx_n_s_Npart, __pyx_n_s_Ny, __pyx_n_s_Nx, __pyx_n_s_QDM_spacing, __pyx_n_s_QDM_deltax, __pyx_n_s_QDM_deltay, __pyx_n_s_Origin, __pyx_n_s_verbose); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(0, 22, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__21);
   __Pyx_GIVEREF(__pyx_tuple__21);
-  __pyx_codeobj__22 = (PyObject*)__Pyx_PyCode_New(13, 0, 13, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__21, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_dipole_inverse_cython_lib_pop_ma, __pyx_n_s_populate_matrix_cython, 19, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__22)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_codeobj__22 = (PyObject*)__Pyx_PyCode_New(13, 0, 13, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__21, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_dipole_inverse_cython_cuda_lib_p, __pyx_n_s_populate_matrix_cython, 22, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__22)) __PYX_ERR(0, 22, __pyx_L1_error)
 
   /* "View.MemoryView":286
  *         return self.name
@@ -18314,11 +18355,11 @@ static int __Pyx_modinit_function_import_code(void) {
 
 
 #if PY_MAJOR_VERSION < 3
-__Pyx_PyMODINIT_FUNC initpop_matrix_lib(void) CYTHON_SMALL_CODE; /*proto*/
-__Pyx_PyMODINIT_FUNC initpop_matrix_lib(void)
+__Pyx_PyMODINIT_FUNC initpop_matrix_cudalib(void) CYTHON_SMALL_CODE; /*proto*/
+__Pyx_PyMODINIT_FUNC initpop_matrix_cudalib(void)
 #else
-__Pyx_PyMODINIT_FUNC PyInit_pop_matrix_lib(void) CYTHON_SMALL_CODE; /*proto*/
-__Pyx_PyMODINIT_FUNC PyInit_pop_matrix_lib(void)
+__Pyx_PyMODINIT_FUNC PyInit_pop_matrix_cudalib(void) CYTHON_SMALL_CODE; /*proto*/
+__Pyx_PyMODINIT_FUNC PyInit_pop_matrix_cudalib(void)
 #if CYTHON_PEP489_MULTI_PHASE_INIT
 {
   return PyModuleDef_Init(&__pyx_moduledef);
@@ -18385,7 +18426,7 @@ bad:
 }
 
 
-static CYTHON_SMALL_CODE int __pyx_pymod_exec_pop_matrix_lib(PyObject *__pyx_pyinit_module)
+static CYTHON_SMALL_CODE int __pyx_pymod_exec_pop_matrix_cudalib(PyObject *__pyx_pyinit_module)
 #endif
 #endif
 {
@@ -18398,7 +18439,7 @@ static CYTHON_SMALL_CODE int __pyx_pymod_exec_pop_matrix_lib(PyObject *__pyx_pyi
   #if CYTHON_PEP489_MULTI_PHASE_INIT
   if (__pyx_m) {
     if (__pyx_m == __pyx_pyinit_module) return 0;
-    PyErr_SetString(PyExc_RuntimeError, "Module 'pop_matrix_lib' has already been imported. Re-initialisation is not supported.");
+    PyErr_SetString(PyExc_RuntimeError, "Module 'pop_matrix_cudalib' has already been imported. Re-initialisation is not supported.");
     return -1;
   }
   #elif PY_MAJOR_VERSION >= 3
@@ -18413,7 +18454,7 @@ if (!__Pyx_RefNanny) {
       Py_FatalError("failed to import 'refnanny' module");
 }
 #endif
-  __Pyx_RefNannySetupContext("__Pyx_PyMODINIT_FUNC PyInit_pop_matrix_lib(void)", 0);
+  __Pyx_RefNannySetupContext("__Pyx_PyMODINIT_FUNC PyInit_pop_matrix_cudalib(void)", 0);
   if (__Pyx_check_binary_version() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #ifdef __Pxy_PyFrame_Initialize_Offsets
   __Pxy_PyFrame_Initialize_Offsets();
@@ -18450,7 +18491,7 @@ if (!__Pyx_RefNanny) {
   Py_INCREF(__pyx_m);
   #else
   #if PY_MAJOR_VERSION < 3
-  __pyx_m = Py_InitModule4("pop_matrix_lib", __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
+  __pyx_m = Py_InitModule4("pop_matrix_cudalib", __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
   #else
   __pyx_m = PyModule_Create(&__pyx_moduledef);
   #endif
@@ -18468,14 +18509,14 @@ if (!__Pyx_RefNanny) {
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
   if (__Pyx_init_sys_getdefaultencoding_params() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
-  if (__pyx_module_is_main_dipole_inverse__cython_lib__pop_matrix_lib) {
+  if (__pyx_module_is_main_dipole_inverse__cython_cuda_lib__pop_matrix_cudalib) {
     if (PyObject_SetAttr(__pyx_m, __pyx_n_s_name_2, __pyx_n_s_main) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   }
   #if PY_MAJOR_VERSION >= 3
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) __PYX_ERR(0, 1, __pyx_L1_error)
-    if (!PyDict_GetItemString(modules, "dipole_inverse.cython_lib.pop_matrix_lib")) {
-      if (unlikely(PyDict_SetItemString(modules, "dipole_inverse.cython_lib.pop_matrix_lib", __pyx_m) < 0)) __PYX_ERR(0, 1, __pyx_L1_error)
+    if (!PyDict_GetItemString(modules, "dipole_inverse.cython_cuda_lib.pop_matrix_cudalib")) {
+      if (unlikely(PyDict_SetItemString(modules, "dipole_inverse.cython_cuda_lib.pop_matrix_cudalib", __pyx_m) < 0)) __PYX_ERR(0, 1, __pyx_L1_error)
     }
   }
   #endif
@@ -18496,22 +18537,33 @@ if (!__Pyx_RefNanny) {
   if (__Pyx_patch_abc() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
 
-  /* "dipole_inverse/cython_lib/pop_matrix_lib.pyx":19
+  /* "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx":2
+ * cimport numpy as cnp
+ * import numpy as np             # <<<<<<<<<<<<<<
+ * from libc.stdlib cimport malloc, free
+ * from cpython.mem cimport PyMem_Malloc, PyMem_Free
+ */
+  __pyx_t_1 = __Pyx_Import(__pyx_n_s_numpy, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 2, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_np, __pyx_t_1) < 0) __PYX_ERR(0, 2, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx":22
  * # -----------------------------------------------------------------------------
  * 
  * def populate_matrix_cython(double [:, :] G,             # <<<<<<<<<<<<<<
  *                            double [:] QDM_domain,
  *                            double scan_height,
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_14dipole_inverse_10cython_lib_14pop_matrix_lib_1populate_matrix_cython, NULL, __pyx_n_s_dipole_inverse_cython_lib_pop_ma_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_14dipole_inverse_15cython_cuda_lib_18pop_matrix_cudalib_1populate_matrix_cython, NULL, __pyx_n_s_dipole_inverse_cython_cuda_lib_p_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 22, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_populate_matrix_cython, __pyx_t_1) < 0) __PYX_ERR(0, 19, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_populate_matrix_cython, __pyx_t_1) < 0) __PYX_ERR(0, 22, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "dipole_inverse/cython_lib/pop_matrix_lib.pyx":1
- * cimport numpy as np             # <<<<<<<<<<<<<<
- * 
- * # -----------------------------------------------------------------------------
+  /* "dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx":1
+ * cimport numpy as cnp             # <<<<<<<<<<<<<<
+ * import numpy as np
+ * from libc.stdlib cimport malloc, free
  */
   __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
@@ -18678,11 +18730,11 @@ if (!__Pyx_RefNanny) {
   __Pyx_XDECREF(__pyx_t_1);
   if (__pyx_m) {
     if (__pyx_d) {
-      __Pyx_AddTraceback("init dipole_inverse.cython_lib.pop_matrix_lib", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("init dipole_inverse.cython_cuda_lib.pop_matrix_cudalib", __pyx_clineno, __pyx_lineno, __pyx_filename);
     }
     Py_CLEAR(__pyx_m);
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init dipole_inverse.cython_lib.pop_matrix_lib");
+    PyErr_SetString(PyExc_ImportError, "init dipole_inverse.cython_cuda_lib.pop_matrix_cudalib");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
