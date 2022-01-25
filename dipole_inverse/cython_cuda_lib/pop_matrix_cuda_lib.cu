@@ -192,8 +192,8 @@ void populate_matrix_cuda(double * G,
         zeta0 = (-1) * scan_height;
     }
 
-    unsigned int G_bytes = sizeof(double) * Nx * Ny * 3 * Npart;
-    unsigned int cuboids_bytes = sizeof(double) * 7 * N_cuboids;
+    size_t G_bytes = sizeof(double) * Nx * Ny * 3 * Npart;
+    size_t cuboids_bytes = sizeof(double) * 7 * N_cuboids;
 
     // Manual mem allocation: G in GPU and cuboids_dev in GPU
     double *G_dev;
