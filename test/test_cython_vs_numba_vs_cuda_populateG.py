@@ -42,13 +42,15 @@ t_numba = timeit.timeit("mag_svd.prepare_matrix(method='numba', verbose=False)",
 t_cuda = timeit.timeit("mag_svd.prepare_matrix(method='cuda', verbose=False)",
                        globals=globals(), number=10)
 
-results['cython_8'] = t_cython_8
+results['cython_8_threads'] = t_cython_8
 results['numba'] = t_numba
 results['cuda'] = t_cuda
 
-print('Timing results for matrix populate function (10 runs)')
+print('\nTiming results for matrix populate function (10 runs)')
+print('Matrix: 125 x 125 x 99 x 3  entries. Nx, Ny = 125, Npart=99')
+print('-' * 80)
 with open('results_comparison_populate_matrix_performance.txt', 'w') as F:
     for k in results.keys():
-        outp = f'{k}: {results[k]:<10}'
+        outp = f'{k:<18}: {results[k]:.6f} s\n'
         print(outp)
         F.write(outp)
