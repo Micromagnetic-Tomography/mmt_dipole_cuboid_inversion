@@ -46,10 +46,12 @@ results['cython_8_threads'] = t_cython_8
 results['numba'] = t_numba
 results['cuda'] = t_cuda
 
-print('\nTiming results for matrix populate function (10 runs)')
-print('Matrix: 125 x 125 x 99 x 3  entries. Nx, Ny = 125, Npart=99')
-print('-' * 80)
 with open('results_comparison_populate_matrix_performance.txt', 'w') as F:
+    msg = ('Timing results for matrix populate function (10 runs)\n' +
+           'Matrix: 125 x 125 x 99 x 3  entries. Nx, Ny = 125, Npart=99\n' +
+           '-' * 80 + '\n')
+    print('\n' + msg)
+    F.write(msg)
     for k in results.keys():
         outp = f'{k:<18}: {results[k]:.6f} s\n'
         print(outp)
