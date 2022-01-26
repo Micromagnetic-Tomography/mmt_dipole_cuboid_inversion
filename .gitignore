@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+pop_matrix_lib.cpython-38-x86_64-linux-gnu.so
 
 # Data files
 *.npz
