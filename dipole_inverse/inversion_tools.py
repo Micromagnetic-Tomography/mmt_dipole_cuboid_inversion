@@ -58,11 +58,11 @@ def calculate_covariance_matrix(DipoleClassInstance: Dipole,
     resolution_matrix = self.Inverse_G @ self.Forward_G
 
     if std_dev_file is not None:
-        np.savetxt(std_dev_file, standard_deviation)
+        np.save(std_dev_file, standard_deviation)
     if norm_covar_file is not None:
-        np.savetxt(norm_covar_file, normcovar)
+        np.save(norm_covar_file, normcovar)
     if resol_matrix_file is not None:
-        np.savetxt(resol_matrix_file, resolution_matrix)
+        np.save(resol_matrix_file, resolution_matrix)
 
     return (standard_deviation, normcovar, resolution_matrix)
 
@@ -137,7 +137,7 @@ def calculate_forward_field(DipoleClassInstance: Dipole,
         Forward_field = Forward_field + error
 
     if forward_field_file is not None:
-        np.savetxt(forward_field_file,
-                   Forward_field.reshape(self.Ny, self.Nx))
+        np.save(forward_field_file,
+                Forward_field.reshape(self.Ny, self.Nx))
 
     return Forward_field
