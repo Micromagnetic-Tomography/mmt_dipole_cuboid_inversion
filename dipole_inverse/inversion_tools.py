@@ -8,6 +8,7 @@ from typing import Optional  # Working with Python >3.8
 
 def calculate_covariance_matrix(DipoleClassInstance: Dipole,
                                 sigma: float,
+                                norm: bool = True,
                                 std_dev_file: str = None,
                                 norm_covar_file: str = None,
                                 resol_matrix_file: str = None
@@ -24,6 +25,8 @@ def calculate_covariance_matrix(DipoleClassInstance: Dipole,
         inversion matrices
     sigma
         The standard deviation of the error of the magnetic field
+    norm
+        normalize the covariance matrix (True) or not (False)
     std_dev_file
         File path to where the standard deviation is written
     norm_covar_file
@@ -49,11 +52,14 @@ def calculate_covariance_matrix(DipoleClassInstance: Dipole,
 
     standard_deviation = np.sqrt(np.diag(covar)).reshape(self.Npart, 3)
 
-    normcovar = covar.copy()
-    for row in range(covar.shape[0]):
-        for column in range(covar.shape[1]):
-            normcovar[row, column] = covar[row, column]
-            normcovar[row, column] /= np.sqrt(covar[row, row] * covar[column, column])
+    if norm == True:
+        normcovar = covar.copy()
+        for row in range(covar.shape[0]):
+            for column in range(covar.shape[1]):
+                normcovar[row, column] = covar[row, column]
+                normcovar[row, column] /= np.sqrt(covar[row, row] * covar[column, column])
+    else:
+        normcovar = covar
 
     resolution_matrix = self.Inverse_G @ self.Forward_G
 
