@@ -8,7 +8,7 @@ from typing import Optional  # Working with Python >3.8
 
 def calculate_covariance_matrix(DipoleClassInstance: Dipole,
                                 sigma: float,
-                                norm: bool = True
+                                norm: bool = True,
                                 std_dev_file: str = None,
                                 norm_covar_file: str = None,
                                 resol_matrix_file: str = None
