@@ -2,7 +2,11 @@
 __pycache__/
 *.py[cod]
 *$py.class
-pop_matrix_lib.cpython-38-x86_64-linux-gnu.so
+
+# Cython files
+*.so
+dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.cpp
+dipole_inverse/cython_lib/pop_matrix_lib.c
 
 # Data files
 *.npz
