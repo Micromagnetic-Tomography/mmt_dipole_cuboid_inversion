@@ -609,8 +609,8 @@ class Dipole(object):
         # https://stackoverflow.com/questions/15637336/numpy-unique-with-order-preserved
         data = np.column_stack((p_idxs, self.Mag.reshape(self.Npart, 3)))
 
-        np.savetxt(Magfile, data)
-        np.savetxt(keyfile, p_idxs)
+        np.save(Magfile, data)
+        np.save(keyfile, p_idxs)
 
     def forward_field(self,
                       filepath: str = None,
@@ -638,6 +638,6 @@ class Dipole(object):
             self.sigma = sigma * 4 * self.QDM_deltax * self.QDM_deltay  # originally it is a flux
             Forward_field = Forward_field + error
         if filepath is not None:
-            np.savetxt(filepath, Forward_field.reshape(self.Ny, self.Nx))
+            np.save(filepath, Forward_field.reshape(self.Ny, self.Nx))
         else:
             return Forward_field.reshape(self.Ny, self.Nx)
