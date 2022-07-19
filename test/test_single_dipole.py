@@ -1,13 +1,13 @@
-from dipole_inverse_tools import set_max_num_threads
+from mmt_dipole_inverse_tools import set_max_num_threads
 set_max_num_threads(4)
 import numpy as np
 from pathlib import Path
 import time
 import matplotlib.pyplot as plt
-import dipole_inverse as dpinv  # noqa: E402
+import mmt_dipole_inverse as dpinv  # noqa: E402
 try:
     # the cuda populate_matrix function
-    from dipole_inverse.cython_cuda_lib import pop_matrix_cudalib
+    from mmt_dipole_inverse.cython_cuda_lib import pop_matrix_cudalib
     HASCUDA = True
 except ImportError:
     HASCUDA = False

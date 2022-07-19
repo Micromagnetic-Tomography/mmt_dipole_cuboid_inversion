@@ -1,10 +1,10 @@
 # from dotenv import load_dotenv
 # load_dotenv()
-from dipole_inverse_tools import set_max_num_threads
+from mmt_dipole_inverse_tools import set_max_num_threads
 import numpy as np
 from pathlib import Path
 set_max_num_threads(6)
-import dipole_inverse as dpinv  # noqa: E402
+import mmt_dipole_inverse as dpinv  # noqa: E402
 
 data_path = Path('../chest/tutorial_qdm_data/')
 

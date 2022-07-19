@@ -1,9 +1,9 @@
-from dipole_inverse_tools import set_max_num_threads
+from mmt_dipole_inverse_tools import set_max_num_threads
 import numpy as np
 from pathlib import Path
 import copy
 set_max_num_threads(8)
-import dipole_inverse as dpinv  # noqa: E402
+import mmt_dipole_inverse as dpinv  # noqa: E402
 
 # Get this script location
 thisloc = Path(__file__).resolve().parent
