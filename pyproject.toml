@@ -1,26 +1,26 @@
 # See: https://github.com/python-poetry/poetry/issues/2740
 # for the current status of the build.py file in Poetry
 [tool.poetry]
-name = "dipole_inverse"
+name = "mmt_dipole_inverse"
 version = "2.0a"
 description = "Python lib to calculate dipole magnetization"
-authors = ["F. Out, D. Cortes, M. Kosters, K. Fabian, L. V. de Groot <f.out@students.uu.nl>"]
-license = "BSD-2-Clause"
+authors = ["F. Out <f.out@students.uu.nl>", "D. Cortés-Ortuño", "M. Kosters", "K. Fabian", "L. V. de Groot"]
+license = "MIT"
 readme = "README.md"
 # build = "build.py"
 
 
 packages = [
-    {include = "dipole_inverse"},
-    {include = "dipole_inverse_tools"},
+    {include = "mmt_dipole_inverse"},
+    {include = "mmt_dipole_inverse_tools"},
 ]
 
 include = [
     # C extensions must be included in the wheel distributions
-    {path = "dipole_inverse/cython_lib/*.so", format = "wheel"},
-    {path = "dipole_inverse/cython_lib/*.pyd", format = "wheel"},
-    {path = "dipole_inverse/cython_cuda_lib/*.so", format = "wheel"},
-    {path = "dipole_inverse/cython_cuda_lib/*.pyd", format = "wheel"},
+    {path = "mmt_dipole_inverse/cython_lib/*.so", format = "wheel"},
+    {path = "mmt_dipole_inverse/cython_lib/*.pyd", format = "wheel"},
+    {path = "mmt_dipole_inverse/cython_cuda_lib/*.so", format = "wheel"},
+    {path = "mmt_dipole_inverse/cython_cuda_lib/*.pyd", format = "wheel"},
 ]
 
 [tool.poetry.build]

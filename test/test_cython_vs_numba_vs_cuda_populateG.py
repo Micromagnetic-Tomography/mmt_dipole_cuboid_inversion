@@ -1,11 +1,11 @@
 # Test performance of matrix population for three different methods
 #
 import timeit
-from dipole_inverse_tools import set_max_num_threads
+from mmt_dipole_inverse_tools import set_max_num_threads
 import numpy as np
 from pathlib import Path
 set_max_num_threads(8)
-import dipole_inverse as dpinv  # noqa: E402
+import mmt_dipole_inverse as dpinv  # noqa: E402
 
 # Get this script location
 thisloc = Path(__file__).resolve().parent
@@ -46,10 +46,12 @@ results['cython_8_threads'] = t_cython_8
 results['numba'] = t_numba
 results['cuda'] = t_cuda
 
-print('\nTiming results for matrix populate function (10 runs)')
-print('Matrix: 125 x 125 x 99 x 3  entries. Nx, Ny = 125, Npart=99')
-print('-' * 80)
 with open('results_comparison_populate_matrix_performance.txt', 'w') as F:
+    msg = ('Timing results for matrix populate function (10 runs)\n' +
+           'Matrix: 125 x 125 x 99 x 3  entries. Nx, Ny = 125, Npart=99\n' +
+           '-' * 80 + '\n')
+    print('\n' + msg)
+    F.write(msg)
     for k in results.keys():
         outp = f'{k:<18}: {results[k]:.6f} s\n'
         print(outp)
