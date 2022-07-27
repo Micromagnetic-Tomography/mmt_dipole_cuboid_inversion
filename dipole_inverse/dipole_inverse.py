@@ -262,8 +262,8 @@ class Dipole(object):
         self.Inverse_G = None
 
     def read_files(self,
-                   QDM_data: str or np.ndarray or np.matrix,
-                   cuboid_data: str or np.ndarray or np.matrix,
+                   QDM_data: Union[Path, str, np.ndarray, np.matrix],
+                   cuboid_data: Union[Path, str, np.ndarray, np.matrix],
                    cuboid_scaling_factor: float,
                    tol: float = 1e-7,
                    qdm_matrix_reader_kwargs={},
@@ -276,11 +276,11 @@ class Dipole(object):
         Parameters
         ----------
         QDM_data
-            Matrixfile, np.ndarray or np.matrix (Nx columns, Ny rows) containing
+            File path, np.ndarray or np.matrix (Nx columns, Ny rows) containing
             the QDM/scan data in T
         cuboid_data
-            File, np.ndarray, or np.matrix (x, y, z, dx, dy, dz, index) containing
-            location and size grains in microm
+            File path, np.ndarray, or np.matrix (x, y, z, dx, dy, dz, index)
+            containing the location and size of the grains in micrometer
         cuboid_scaling_factor
             Scaling factor for the cuboid positions and lengths
         tol
@@ -301,8 +301,8 @@ class Dipole(object):
                 # white spaces or another delimiter specified by reader_kwargs
                 self.QDM_matrix = loadtxt_iter(data_path, **qdm_matrix_reader_kwargs)
             except TypeError:
-                print(f'{QDM_data} is not a valid file name and cannot be loaded. '
-                        'You can also try an np.ndarray or np.matrix')
+                print(f'{QDM_data} is not a valid file name and cannot be '
+                      'loaded. You can also try an np.ndarray or np.matrix')
                 raise
 
         np.multiply(self.QDM_matrix, self.QDM_area, out=self.QDM_matrix)
@@ -337,8 +337,8 @@ class Dipole(object):
                 # We are assuming here that cuboid file does not have comments
                 self.cuboids = loadtxt_iter(cuboid_data, **cuboids_reader_kwargs)
             except TypeError:
-                print(f'{cuboid_data} is not a valid file name and cannot be loaded. '
-                       'You can also try an np.ndarray or np.matrix')
+                print(f'{cuboid_data} is not a valid file name and cannot be '
+                      'loaded. You can also try an np.ndarray or np.matrix')
                 raise
 
         self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor
