@@ -16,7 +16,7 @@ packages = [
 ]
 
 include = [
-    # C extensions must be included in the wheel distributions
+    # C/CUDA extensions must be included in the wheel distributions
     {path = "mmt_dipole_inverse/cython_lib/*.so", format = "wheel"},
     {path = "mmt_dipole_inverse/cython_lib/*.pyd", format = "wheel"},
     {path = "mmt_dipole_inverse/cython_cuda_lib/*.so", format = "wheel"},
@@ -27,7 +27,6 @@ include = [
 generate-setup-file = false
 script = "build.py"
 
-# 05/01/21: latest numba, 0.55, only accepts numpy < 1.22
 [tool.poetry.dependencies]
 cython = ">=0.29.26"
 python = ">=3.8,<3.10"
