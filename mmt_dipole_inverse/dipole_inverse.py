@@ -352,7 +352,7 @@ class Dipole(object):
                        verbose: bool = True,
                        method: _PrepMatOps = 'cython'
                        ):
-        """ Allocates/instatiates the Numpy arrays to populate the forward
+        """ Allocates/instantiates the Numpy arrays to populate the forward
         matrix
 
         Parameters
@@ -497,14 +497,14 @@ class Dipole(object):
                           cuboid_data: np.ndarray or np.matrix,
                           dip_mag: np.ndarray or np.matrix,
                           cuboid_scaling_factor: float,
-                          sigma: float = None,
-                          filepath: str = None,
+                          sigma: Optional[float] = None,
+                          filepath: Optional[str] = None,
                           verbose: bool = True,
                           method_populate: _PrepMatOps = 'cython'):
         """
         A shortcut method to compute the forward magnetic field based on
         the position and magnetization of the grains.
-        
+
         Parameters
         ----------
         cuboid_data
@@ -530,7 +530,7 @@ class Dipole(object):
         """
         self.Mag = dip_mag.flatten()
         self.cuboids = np.copy(cuboid_data)
-        self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor 
+        self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor
 
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
@@ -589,7 +589,7 @@ class Dipole(object):
         """
         Saves the magnetization to a specified Magfile file and the keys of the
         index of the particles in the keyfile file.
-        
+
         Parameters
         ----------
         Magfile
@@ -613,8 +613,8 @@ class Dipole(object):
         np.save(keyfile, p_idxs)
 
     def forward_field(self,
-                      filepath: str = None,
-                      sigma: float = None):
+                      filepath: Optional[str] = None,
+                      sigma: Optional[float] = None):
 
         """ Calculates the forward field
 
