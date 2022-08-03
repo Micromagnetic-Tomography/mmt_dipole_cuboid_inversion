@@ -547,14 +547,16 @@ class Dipole(object):
             Forward_field = self.forward_field(sigma=sigma)
             return Forward_field
 
-    def obtain_magnetization(self,
-                             QDM_data: str or np.ndarray or np.matrix,
-                             cuboid_data: str or np.ndarray or np.matrix,
-                             cuboid_scaling_factor: float,
-                             verbose: bool = True,
-                             method_populate: _PrepMatOps = 'cython',
-                             method_inverse: _MethodOps = 'scipy_pinv',
-                             **method_inverse_kwargs):
+    def obtain_magnetization(
+            self,
+            QDM_data: Path or str or np.ndarray or np.matrix,
+            cuboid_data: Path or str or np.ndarray or np.matrix,
+            cuboid_scaling_factor: float,
+            verbose: bool = True,
+            method_populate: _PrepMatOps = 'cython',
+            method_inverse: _MethodOps = 'scipy_pinv',
+            **method_inverse_kwargs
+            ):
         """
         A shortcut method to call three functions to compute the magnetization
         of the grains.
@@ -562,19 +564,18 @@ class Dipole(object):
         Parameters
         ----------
         QDM_data
-            Matrixfile, np.ndarray or np.matrix (Nx columns, Ny rows) containing
-            the QDM/scan data in T
+            Matrix file, np.ndarray or np.matrix (Nx columns, Ny rows)
+            containing the QDM/scan data in T
         cuboid_data
-            File, np.ndarray, or np.matrix (x, y, z, dx, dy, dz, index) containing
-            location and size grains in microm
+            File, np.ndarray, or np.matrix (x, y, z, dx, dy, dz, index)
+            containing location and size grains in microm
         cuboid_scaling_factor
             Scaling factor for the cuboid positions and lengths
         method_populate
             Method to populate the forward matrix
         method_inverse
-            Method to calculate the numerical inversion. See
-            self.calculate_inverse docstring for details about the method
-            parameters
+            Method to calculate the numerical inversion. See the docstring of
+            `self.calculate_inverse` for details about the method parameters
         """
 
         self.read_files(QDM_data, cuboid_data, cuboid_scaling_factor)
@@ -583,12 +584,12 @@ class Dipole(object):
                                **method_inverse_kwargs)
 
     def save_results(self,
-                     Magfile: str,
-                     keyfile: str,
+                     Magfile: Path or str,
+                     keyfile: Path or str,
                      ):
         """
-        Saves the magnetization to a specified Magfile file and the keys of the
-        index of the particles in the keyfile file.
+        Saves the magnetization to a specified `Magfile` file and the keys of
+        the index of the particles in the key file file.
 
         Parameters
         ----------
@@ -628,8 +629,7 @@ class Dipole(object):
         Returns
         -------
         Forward_field
-            Optionally return forward magnetic field if no filepath
-            is inputted
+            Optionally return forward magnetic field if no file path is input
         """
 
         Forward_field = np.matmul(self.Forward_G, self.Mag) / self.QDM_area  # mag field

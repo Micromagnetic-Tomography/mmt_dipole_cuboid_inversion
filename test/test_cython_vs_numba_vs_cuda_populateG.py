@@ -1,7 +1,7 @@
 # Test performance of matrix population for three different methods
 #
 import timeit
-from mmt_dipole_inverse_tools import set_max_num_threads
+from mmt_dipole_inverse.tools import set_max_num_threads
 import numpy as np
 from pathlib import Path
 set_max_num_threads(8)
@@ -33,14 +33,17 @@ mag_svd.read_files(QDMfile, cuboidfile, 1e-6)
 
 results = {}
 
-t_cython_8 = timeit.timeit("mag_svd.prepare_matrix(method='cython', verbose=False)",
-                           globals=globals(), number=10)
+t_cython_8 = timeit.timeit(
+        "mag_svd.prepare_matrix(method='cython', verbose=False)",
+        globals=globals(), number=10)
 
-t_numba = timeit.timeit("mag_svd.prepare_matrix(method='numba', verbose=False)",
-                        globals=globals(), number=10)
+t_numba = timeit.timeit(
+        "mag_svd.prepare_matrix(method='numba', verbose=False)",
+        globals=globals(), number=10)
 
-t_cuda = timeit.timeit("mag_svd.prepare_matrix(method='cuda', verbose=False)",
-                       globals=globals(), number=10)
+t_cuda = timeit.timeit(
+        "mag_svd.prepare_matrix(method='cuda', verbose=False)",
+        globals=globals(), number=10)
 
 results['cython_8_threads'] = t_cython_8
 results['numba'] = t_numba

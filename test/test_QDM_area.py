@@ -1,6 +1,4 @@
-# from dotenv import load_dotenv
-# load_dotenv()
-from mmt_dipole_inverse_tools import set_max_num_threads
+from mmt_dipole_inverse.tools import set_max_num_threads
 import numpy as np
 from pathlib import Path
 set_max_num_threads(6)
@@ -34,4 +32,5 @@ mag_svd = dpinv.Dipole(
     QDM_deltay, QDM_area, sample_height,
     scan_height)
 
-mag_svd.obtain_magnetization(QDMfile, cuboidfile, 1e-6, method_populate='cython', verbose=False)
+mag_svd.obtain_magnetization(QDMfile, cuboidfile, 1e-6,
+                             method_populate='cython', verbose=False)

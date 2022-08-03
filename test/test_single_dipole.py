@@ -1,4 +1,4 @@
-from mmt_dipole_inverse_tools import set_max_num_threads
+from mmt_dipole_inverse.tools import set_max_num_threads
 set_max_num_threads(4)
 import numpy as np
 from pathlib import Path
