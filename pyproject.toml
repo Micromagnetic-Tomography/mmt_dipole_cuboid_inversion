@@ -11,8 +11,7 @@ readme = "README.md"
 
 
 packages = [
-    {include = "mmt_dipole_inverse"},
-    {include = "mmt_dipole_inverse_tools"},
+    {include = "mmt_dipole_inverse"}
 ]
 
 include = [
