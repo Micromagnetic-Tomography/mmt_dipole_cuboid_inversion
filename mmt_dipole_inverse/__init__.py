@@ -1,6 +1,5 @@
 from .dipole_inverse import Dipole
 from . import cython_lib
-from . import plot_tools
 
 from .__about__ import (
     __author__,
@@ -16,7 +15,6 @@ from .__about__ import (
 __all__ = [
     "Dipole",
     "cython_lib",
-    "plot_tools",
     "__title__",
     "__summary__",
     "__uri__",
