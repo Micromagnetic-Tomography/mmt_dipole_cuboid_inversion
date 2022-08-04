@@ -7,6 +7,7 @@ Licensed under MIT License, 2021
 
 import numpy as np
 # import pandas as pd
+import csv
 import copy
 import time
 
@@ -264,7 +265,7 @@ def cuboid_decomposition_method(mn, zarr):
     return (totvol, t0, cublst)
 
 
-def CuboidDecomposition(fn, fnout):
+def CuboidDecomposition(fn, fnout, format_output=False):
     """Perform cuboid aggregation decomposition of pixel data from a text file
 
     Parameters
@@ -274,7 +275,12 @@ def CuboidDecomposition(fn, fnout):
         data is in integer format, which represent the index and pixel
         coordinates. Column headers can have any name but should be in order.
     fnout
-        File name for output text file with cuboid decomposition
+        File name for output CSV text file with cuboid decomposition.
+    format_output
+        If False, the output file contains the lower and upper corners
+        defining the cuboids in pixel coordinates (pixel centers). If True,
+        the output contains indexes, the center coordinates of every cuboid
+        and the cuboid lenghts in every spatial dimension.
     """
     mn, mx, count, zarr = get_voxel_file(fn)
     print(f'{count} voxels in: {mn}, {mx}')
@@ -287,9 +293,23 @@ def CuboidDecomposition(fn, fnout):
 
     with open(fnout, "w", newline="") as f:
         wrt = csv.writer(f)
-        wrt.writerow(["xmin", "ymin", "zmin", "xmax", "ymax", "zmax"])
-        for cub in cublst:
-            row = cub[1]
-            for i in range(3):
-                row.append(cub[1][i] + cub[2][i] - 1)
-            wrt.writerow(row)
+
+        if format_output:
+            wrt.writerow(["i", "x", "y", "z", "dx", "dy", "dz"])
+            for i, cub in enumerate(cublst):
+                row = [i + 1]
+                r_min = [c - 0.5 for c in cub[1]]
+                r_max = [(cub[1][i] + cub[2][i] - 1 + 0.5) for i in range(3)]
+                dr = [(r_max[i] - r_min[i]) for i in range(3)]
+                r_center = [(r_min[i] + 0.5 * dr[i]) for i in range(3)]
+
+                row.extend(r_center)
+                row.extend(dr)
+                wrt.writerow(row)
+        else:
+            wrt.writerow(["xmin", "ymin", "zmin", "xmax", "ymax", "zmax"])
+            for cub in cublst:
+                # print(cub)
+                row = cub[1]
+                row.extend([cub[1][i] + cub[2][i] - 1 for i in range(3)])
+                wrt.writerow(row)
