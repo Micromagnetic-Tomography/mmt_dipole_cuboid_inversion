@@ -1,0 +1,3 @@
+[submodule "mmt_dipole_inverse/tools/grain_geometry_tools"]
+	path = mmt_dipole_inverse/tools/grain_geometry_tools
+	url = https://github.com/Micromagnetic-Tomography/grain_geometry_tools
