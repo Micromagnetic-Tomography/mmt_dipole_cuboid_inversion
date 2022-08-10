@@ -3,7 +3,7 @@ from matplotlib.collections import PolyCollection
 import matplotlib as mpl
 import numpy as np
 from shapely.geometry import Polygon
-import grain_geometry_tools as ggt
+from . import grain_geometry_tools as ggt
 
 
 def set_grain_geometries(DipoleIns,
