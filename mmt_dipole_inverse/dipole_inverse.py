@@ -13,6 +13,10 @@ from typing import Union     # Working with Python >3.8
 from typing import Tuple     # Working with Python >3.8
 from typing import Optional  # Working with Python >3.8
 # import os
+import warnings
+# Make a proper logging system if we grow this library:
+# import logging  # def at __init__ file
+# logging.getLogger(__name__)
 
 
 def loadtxt_iter(txtfile, delimiter=None, skiprows=0, dtype=np.float64):
@@ -203,12 +207,13 @@ class Dipole(object):
                  QDM_deltax: float,
                  QDM_deltay: float,
                  QDM_area: float,
-                 sample_height: float,
                  scan_height: float
                  ):
-        """
-        This class calculates the magnetization of a group of magnetic grains
-        from a surface with magnetic field scan data.
+        """Class to obtain the magnetization from grains modelled as cuboids
+
+        The magnetization is computed via numerical inversion from a surface
+        with magnetic field scan data (from microscopy), and grain locations
+        and geometry from tomographic data.
 
         Parameters
         ----------
@@ -223,8 +228,6 @@ class Dipole(object):
             Half width of QDM sensor
         QDM_area
             Area of QDM sensor in square metres
-        sample_height
-            Thickness of sample in metres
         scan_height
             Distance between sample and QDM scanner in metres
 
@@ -237,7 +240,6 @@ class Dipole(object):
         QDM_deltax
         QDM_deltay
         QDM_area
-        sample_height
         scan_height
         Nx, Ny
         QDM_domain
@@ -256,7 +258,6 @@ class Dipole(object):
         self.QDM_deltax = QDM_deltax
         self.QDM_deltay = QDM_deltay
         self.QDM_area = QDM_area
-        self.sample_height = sample_height
         self.scan_height = scan_height
 
         self.Inverse_G = None
@@ -425,8 +426,8 @@ class Dipole(object):
                                      dgetrf to compute :math:`\mathbf{M}` by
                                      solving the matrix least squares problem:
                                      :math:`Gᵀ * G * M = Gᵀ * ϕ_{QDM}`
-                * scipy_pinv      :: Least squares method
-                * scipy_pinv2     :: SVD method
+                * scipy_pinv      :: SVD method
+                * scipy_pinv2     :: (Deprecated) SVD method, calls pinv
                 * numpy_pinv      :: SVD method
 
         Notes
@@ -441,13 +442,13 @@ class Dipole(object):
             print(f'Start inversion with {self.Forward_G.shape[0]} '
                   f'knowns and {self.Forward_G.shape[1]} unknowns')
             # probably there is a more efficient way to write these options
-            if method == 'scipy_pinv':
+            if method == 'scipy_pinv' or 'scipy_pinv2':
+                if method == 'scipy_pinv2':
+                    # Not shown in Jupyter somehow: (make a simple print?)
+                    warnings.warn('pinv2 is deprecated, using pinv instead',
+                                  DeprecationWarning)
                 Inverse_G = spl.pinv(self.Forward_G, **method_kwargs)
                 self.Mag = np.matmul(Inverse_G, QDM_flatten)  # type: ignore
-                print(SUCC_MSG)
-            elif method == 'scipy_pinv2':
-                Inverse_G = spl.pinv2(self.Forward_G, **method_kwargs)
-                self.Mag = np.matmul(Inverse_G, QDM_flatten)
                 print(SUCC_MSG)
             elif method == 'numpy_pinv':
                 Inverse_G = np.linalg.pinv(self.Forward_G, **method_kwargs)
@@ -460,8 +461,7 @@ class Dipole(object):
                 # 1. Get LU decomp for G^t * G
                 # 2. Solve the linear equation using the LU dcomp as required
                 #    by the dgesrs solver
-                GtG = np.matmul(self.Forward_G.T,
-                                self.Forward_G)
+                GtG = np.matmul(self.Forward_G.T, self.Forward_G)
                 GtG_shuffle, IPIV, INFO1 = spl.lapack.dgetrf(GtG)
                 if INFO1 == 0:
                     print('LU decomposition of G * G^t succeeded')
