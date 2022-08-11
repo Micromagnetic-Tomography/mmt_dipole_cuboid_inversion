@@ -279,8 +279,9 @@ def CuboidDecomposition(fn, fnout, format_output=False):
     format_output
         If False, the output file contains the lower and upper corners
         defining the cuboids in pixel coordinates (pixel centers). If True,
-        the output contains indexes, the center coordinates of every cuboid
-        and the cuboid lenghts in every spatial dimension.
+        the output contains the center coordinates of every cuboid,
+        half the cuboid lenghts in every spatial dimension and the indexes
+        as `x, y, z, dx, dy, dz, index`
     """
     mn, mx, count, zarr = get_voxel_file(fn)
     print(f'{count} voxels in: {mn}, {mx}')
@@ -295,16 +296,17 @@ def CuboidDecomposition(fn, fnout, format_output=False):
         wrt = csv.writer(f)
 
         if format_output:
-            wrt.writerow(["i", "x", "y", "z", "dx", "dy", "dz"])
+            wrt.writerow(["x", "y", "z", "dx", "dy", "dz", "i"])
             for i, cub in enumerate(cublst):
-                row = [i + 1]
+                # row = []
                 r_min = [c - 0.5 for c in cub[1]]
                 r_max = [(cub[1][i] + cub[2][i] - 1 + 0.5) for i in range(3)]
-                dr = [(r_max[i] - r_min[i]) for i in range(3)]
+                dr = [0.5 * (r_max[i] - r_min[i]) for i in range(3)]
                 r_center = [(r_min[i] + 0.5 * dr[i]) for i in range(3)]
 
-                row.extend(r_center)
+                row = r_center
                 row.extend(dr)
+                row.extend([i + 1])
                 wrt.writerow(row)
         else:
             wrt.writerow(["xmin", "ymin", "zmin", "xmax", "ymax", "zmax"])
