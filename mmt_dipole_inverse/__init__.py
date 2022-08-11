@@ -1,3 +1,4 @@
+# Show only the main class:
 from .dipole_inverse import Dipole
 from . import cython_lib
 
