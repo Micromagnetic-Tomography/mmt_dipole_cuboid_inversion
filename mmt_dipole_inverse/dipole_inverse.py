@@ -1,3 +1,5 @@
+# Allow class annotations in classmethod
+from __future__ import annotations
 import numpy as np
 import numba as nb
 from pathlib import Path
@@ -12,7 +14,9 @@ from typing import Literal   # Working with Python >3.8
 from typing import Union     # Working with Python >3.8
 from typing import Tuple     # Working with Python >3.8
 from typing import Optional  # Working with Python >3.8
+from typing import Type      # Working with Python >3.8
 # import os
+import json
 import warnings
 # Make a proper logging system if we grow this library:
 # import logging  # def at __init__ file
@@ -261,6 +265,39 @@ class Dipole(object):
         self.scan_height = scan_height
 
         self.Inverse_G = None
+
+    @classmethod
+    def from_json(cls, file_path: Union[Path, str]) -> Dipole:
+        """Instantiate the class using scanning surface params from a JSON file
+
+        The required JSON keys are::
+
+            'Scan domain LL-x'
+            'Scan domain LL-y'
+            'Scan domain UR-x'
+            'Scan domain UR-y'
+            'Scan spacing'
+            'Scan delta-x'
+            'Scan delta-y'
+            'Scan area'
+            'Sample height'
+            'Scan height'
+        """
+        # Load metadata
+        with open(file_path, 'r') as f:
+            metadict = json.load(f)
+
+        scan_domain = np.array([[metadict.get('Scan domain LL-x'),
+                                 metadict.get('Scan domain LL-y')],
+                                [metadict.get('Scan domain UR-x'),
+                                 metadict.get('Scan domain UR-y')]])
+
+        return cls(scan_domain,
+                   metadict.get('Scan spacing'),
+                   metadict.get('Scan delta-x'),
+                   metadict.get('Scan delta-y'),
+                   metadict.get('Scan area'),
+                   metadict.get('Scan height'))
 
     def read_files(self,
                    QDM_data: Union[Path, str, np.ndarray, np.matrix],
