@@ -11,11 +11,10 @@ Dipole Inverse - Cuboid model numerical inversion
 |
 
 This is the documentation for the `dipole_inverse` library. This Python module
-allows to perform numerical inversions from magnetometry scan data into grains
-modeled as cuboids. Grain geometries and locations are obtained from microCT.
-The main class of this library is the `Dipole` class that accepts the
-measurement data and has the necessary methods to obtain inverted
-magnetizations.
+performs numerical inversions from magnetometry scan data into grains modeled
+as cuboids. Grain geometries and locations are obtained from microCT. The main
+class of this library is the `Dipole` class that accepts the measurement data
+and has the necessary methods to obtain inverted magnetizations.
 
 .. autoclass:: dipole_inverse.Dipole
 
