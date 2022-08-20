@@ -1,9 +1,9 @@
 # Allow class annotations in classmethod
 from __future__ import annotations
 import numpy as np
-import numba as nb
 from pathlib import Path
 import scipy.linalg as spl
+from .numba_lib import populate_matrix_numba
 from .cython_lib import pop_matrix_lib   # the cython populate_matrix function
 try:
     from .cython_cuda_lib import pop_matrix_cudalib   # the cuda populate_matrix function
@@ -14,7 +14,7 @@ from typing import Literal   # Working with Python >3.8
 from typing import Union     # Working with Python >3.8
 from typing import Tuple     # Working with Python >3.8
 from typing import Optional  # Working with Python >3.8
-from typing import Type      # Working with Python >3.8
+# from typing import Type      # Working with Python >3.8
 # import os
 import json
 import warnings
@@ -71,197 +71,66 @@ def loadtxt_iter(txtfile, delimiter=None, skiprows=0, dtype=np.float64):
     return data
 
 
-@nb.jit(nopython=True)
-def populate_matrix_numba(G, QDM_domain, scan_height, cuboids, Npart,
-                          Ny, Nx, QDM_spacing, QDM_deltax, QDM_deltay,
-                          Origin, verbose=True):
-    """
-    Main function to populate the G matrix
-
-    Notes
-    -----
-    The outer while loop will last until reaching the total number of cuboids
-    in the sample. Adjacent cuboids belong to a single particle, which is
-    indexed in the 6th element of the cuboids array. The population of the G
-    matrix is performed column wise for every particle. For each cuboid
-    belonging to a particle, their contribution to the magnetic flux is summed
-    up for every sensor measurement in steps of delta in the xy plane, which
-    are given by the loops with the i-j indexes. The flux is stored column
-    wise.
-
-    Parameters
-    ----------
-    QDM_domain
-        Array of size 2x2 with the lower left and upper right coordinates of
-        the scan surface
-    Origin
-        If True the scan data is set to the QDM lower left corner coordinates.
-        If False, the scan data origin is set at (0., 0.)
-    """
-
-    Cm = 1e-7
-    if Origin is True:
-        xi0, eta0 = QDM_domain[0, :]
-    else:
-        xi0, eta0 = 0., 0.
-    zeta0 = (-1) * scan_height
-    sensor_pos = np.zeros(3)
-    sensor_pos[2] = zeta0
-
-    # Definitions
-    particle_flux = np.zeros(3)
-    get_flux = np.zeros(3)
-    cuboid_center = np.zeros(3)
-    dr_cuboid = np.zeros(3)
-    cuboid_size = np.zeros(3)
-
-    i_cuboid = 0
-    i_particle_prev = int(cuboids[0, 6])
-    i_particle = i_particle_prev
-
-    # print('max cub =', Npart)
-    # print('G matrix', G.shape)
-    # If grains are not numbered in order this always works
-    i_particle_0_N = 0
-
-    while i_cuboid < len(cuboids):
-        if verbose:
-            # print(f'Particle = {i_particle}  Cuboid = {i_cuboid}')
-            print('Particle =', i_particle, 'Cuboid =', i_cuboid)
-            # print(particle =)
-
-        i_cuboid_old = i_cuboid
-
-        # Loop over sensor measurements. Each sensor is in the xy
-        # plane and has area delta^2
-        for j in range(Ny):
-            sensor_pos[1] = eta0 + QDM_spacing * j
-            for i in range(Nx):
-                sensor_pos[0] = xi0 + QDM_spacing * i
-
-                # The contribution of the flux for mx, my, mz
-                particle_flux[:] = 0
-
-                # Start from the index of the particle being analysed
-                i_particle = int(cuboids[i_cuboid_old, 6])
-                i_cuboid = i_cuboid_old
-
-                # While the cuboid has particle index of the
-                # particle being analysed
-                while i_particle == i_particle_prev:
-                    #                     print(i_particle, i, j, i_cuboid)
-                    cuboid_center[:] = cuboids[i_cuboid, :3]
-                    dr_cuboid[:] = cuboid_center - sensor_pos
-                    # Cuboid sizes:
-                    cuboid_size[:] = cuboids[i_cuboid, 3:6]
-
-                    # calculate flux per cuboid
-                    get_flux[:] = 0.
-                    for s1 in [-1, 1]:
-                        for s2 in [-1, 1]:
-                            for s3 in [-1, 1]:
-                                for s4 in [-1, 1]:
-                                    for s5 in [-1, 1]:
-                                        x = dr_cuboid[0] + s1 * cuboid_size[0] - s4 * QDM_deltax
-                                        y = dr_cuboid[1] + s2 * cuboid_size[1] - s5 * QDM_deltay
-                                        z = dr_cuboid[2] + s3 * cuboid_size[2]
-                                        sign = s1 * s2 * s3 * s4 * s5
-                                        x2, y2, z2 = x ** 2, y ** 2, z ** 2
-                                        r2 = x2 + y2 + z2
-                                        r = np.sqrt(r2)
-                                        Az = np.arctan2(x * y, z * r)
-                                        if r != 0.0:
-                                            Lx = np.log(x + r)
-                                            Ly = np.log(y + r)
-                                        else:
-                                            Lx, Ly = 0., 0.
-                                            print('Error at p = ', i_particle)
-
-                                        F120 = 0.5 * ((y2 - z2) * Lx - r * x) - y * (z * Az - x * Ly)
-                                        F210 = 0.5 * ((x2 - z2) * Ly - r * y) - x * (z * Az - y * Lx)
-                                        F22m = -x * y * Az - z * (x * Lx + y * Ly - r)
-
-                                        get_flux[0] += sign * F120
-                                        get_flux[1] += sign * F210
-                                        get_flux[2] += sign * F22m
-
-                    # Finish cuboidsloop in the particle i_particle_prev
-                    # and continue with the next sensor measurement
-
-                    # scale flux measurement:
-                    particle_flux[:] += -Cm * get_flux
-                    i_cuboid += 1
-                    i_particle = int(cuboids[i_cuboid, 6])
-
-                # print(i + j * Nx, 3 * i_particle_prev)
-                # Populate G matrix column wise
-                G[i + j * Nx, 3 * i_particle_0_N] = particle_flux[0]
-                G[i + j * Nx, 3 * i_particle_0_N + 1] = particle_flux[1]
-                G[i + j * Nx, 3 * i_particle_0_N + 2] = particle_flux[2]
-
-        i_particle_prev = i_particle
-        i_particle_0_N += 1
-
-
 class Dipole(object):
 
     def __init__(self,
-                 QDM_domain: np.ndarray,
-                 QDM_spacing: float,
-                 QDM_deltax: float,
-                 QDM_deltay: float,
-                 QDM_area: float,
+                 scan_domain: np.ndarray,
+                 scan_spacing: float,
+                 scan_deltax: float,
+                 scan_deltay: float,
+                 scan_area: float,
                  scan_height: float
                  ):
         """Class to obtain the magnetization from grains modelled as cuboids
 
         The magnetization is computed via numerical inversion from a surface
-        with magnetic field scan data (from microscopy), and grain locations
-        and geometry from tomographic data.
+        with magnetic field scan data (from microscopy, such as Quantum Diamond
+        Microscopy), and both grain locations and geometries from tomographic
+        data.
 
         Parameters
         ----------
-        QDM_domain
-            (2x2 numpy matrix) : Size (metres) of the QDM domain as
+        scan_domain
+            (2x2 numpy matrix) : Size (metres) of the scan domain as
              np.array([[x1, y1], [x2, y2]])
-        QDM_spacing
+        scan_spacing
             Distance between two adjacent scanning points in metres
-        QDM_deltax
-            Half length of QDM sensor
-        QDM_deltay
-            Half width of QDM sensor
-        QDM_area
-            Area of QDM sensor in square metres
+        scan_deltax
+            Half length of scan sensor
+        scan_deltay
+            Half width of scan sensor
+        scan_area
+            Area of scan sensor in square metres
         scan_height
-            Distance between sample and QDM scanner in metres
+            Distance between sample and scan surface in metres
 
         Attributes
         ----------
-        QDM_data
+        scan_data
         cuboid_data
-        QDM_domain
-        QDM_spacing
-        QDM_deltax
-        QDM_deltay
-        QDM_area
+        scan_domain
+        scan_spacing
+        scan_deltax
+        scan_deltay
+        scan_area
         scan_height
         Nx, Ny
-        QDM_domain
+        scan_domain
 
         * The read_files function sets:
 
-        QDM_matrix
+        scan_matrix
         cuboids
         Npart
         Ncub
 
         """
 
-        self.QDM_domain = QDM_domain
-        self.QDM_spacing = QDM_spacing
-        self.QDM_deltax = QDM_deltax
-        self.QDM_deltay = QDM_deltay
-        self.QDM_area = QDM_area
+        self.scan_domain = scan_domain
+        self.scan_spacing = scan_spacing
+        self.scan_deltax = scan_deltax
+        self.scan_deltay = scan_deltay
+        self.scan_area = scan_area
         self.scan_height = scan_height
 
         self.Inverse_G = None
@@ -300,66 +169,68 @@ class Dipole(object):
                    metadict.get('Scan height'))
 
     def read_files(self,
-                   QDM_data: Union[Path, str, np.ndarray, np.matrix],
+                   scan_data: Union[Path, str, np.ndarray, np.matrix],
                    cuboid_data: Union[Path, str, np.ndarray, np.matrix],
                    cuboid_scaling_factor: float,
                    tol: float = 1e-7,
-                   qdm_matrix_reader_kwargs={},
+                   scan_matrix_reader_kwargs={},
                    cuboids_reader_kwargs={}
                    ):
-        """ Reads in QDM_data and cuboid_data. This function also corrects the
-        limits of the QDM_domain attribute according to the size of the QDM
-        data matrix.
+        """Reads in scan data and cuboid data from text/csv files
+
+        This function also corrects the limits of the `scan_domain` attribute
+        according to the size of the scan data matrix.
 
         Parameters
         ----------
-        QDM_data
-            File path, np.ndarray or np.matrix (Nx columns, Ny rows) containing
-            the QDM/scan data in T
+        scan_data
+            File path, `np.ndarray` or `np.matrix` (`Nx` columns, `Ny` rows)
+            containing the scan data in Tesla
         cuboid_data
-            File path, np.ndarray, or np.matrix (x, y, z, dx, dy, dz, index)
-            containing the location and size of the grains in micrometer
+            File path, `np.ndarray,` or `np.matrix` containing the location and
+            size of the grains in micrometer, with format::
+                (x, y, z, dx, dy, dz, index)
         cuboid_scaling_factor
             Scaling factor for the cuboid positions and lengths
         tol
-            Tolerance for checking QDM_domain. Default is 1e-7
-        qdm_matrix_reader_kwargs
-            Extra arguments to the reader of the QDm file, e.g. `delimiter=','`
+            Tolerance for checking scan_domain. Default is 1e-7
+        scan_matrix_reader_kwargs
+            Extra arguments to the reader of the scan file, e.g. `delimiter=','`
         cuboids_reader_kwargs
             Extra arguments to the reader of cuboid files, e.g. `skiprows=2`
         """
 
-        if isinstance(QDM_data, (np.ndarray, np.matrix)):
-            self.QDM_matrix = np.copy(QDM_data)
+        if isinstance(scan_data, (np.ndarray, np.matrix)):
+            self.scan_matrix = np.copy(scan_data)
         else:
             try:
-                data_path = Path(QDM_data)
-                # self.QDM_matrix = np.loadtxt(self.QDM_data) * self.QDM_area
-                # Use a faster reader, assuming the QDM file is separated by
+                data_path = Path(scan_data)
+                # self.scan_matrix = np.loadtxt(self.scan_data) * self.scan_area
+                # Use a faster reader, assuming the scan file is separated by
                 # white spaces or another delimiter specified by reader_kwargs
-                self.QDM_matrix = loadtxt_iter(data_path, **qdm_matrix_reader_kwargs)
+                self.scan_matrix = loadtxt_iter(data_path, **scan_matrix_reader_kwargs)
             except TypeError:
-                print(f'{QDM_data} is not a valid file name and cannot be '
+                print(f'{scan_data} is not a valid file name and cannot be '
                       'loaded. You can also try an np.ndarray or np.matrix')
                 raise
 
-        np.multiply(self.QDM_matrix, self.QDM_area, out=self.QDM_matrix)
+        np.multiply(self.scan_matrix, self.scan_area, out=self.scan_matrix)
 
         # ---------------------------------------------------------------------
-        # Set the limits of the QDM domain
+        # Set the limits of the scan domain
 
-        self.Ny, self.Nx = self.QDM_matrix.shape
-        new_domain = self.QDM_domain[0, 0] + (self.Nx - 1) * self.QDM_spacing
-        if abs(new_domain - self.QDM_domain[1, 0]) > tol:
-            print(f'QDM_domain[1, 0] has been reset from '
-                  f'{self.QDM_domain[1, 0]} to {new_domain}.')
-            self.QDM_domain[1, 0] = new_domain
-        new_domain = self.QDM_domain[0, 1] + (self.Ny - 1) * self.QDM_spacing
-        if abs(new_domain - self.QDM_domain[1, 1]) > tol:
-            print(f'QDM_domain[1, 1] has been reset from '
-                  f'{self.QDM_domain[1, 1]} to {new_domain}.')
-            self.QDM_domain[1, 1] = new_domain
-        if abs(self.QDM_deltax * self.QDM_deltay * 4 - self.QDM_area) > tol**2:
+        self.Ny, self.Nx = self.scan_matrix.shape
+        new_domain = self.scan_domain[0, 0] + (self.Nx - 1) * self.scan_spacing
+        if abs(new_domain - self.scan_domain[1, 0]) > tol:
+            print(f'scan_domain[1, 0] has been reset from '
+                  f'{self.scan_domain[1, 0]} to {new_domain}.')
+            self.scan_domain[1, 0] = new_domain
+        new_domain = self.scan_domain[0, 1] + (self.Ny - 1) * self.scan_spacing
+        if abs(new_domain - self.scan_domain[1, 1]) > tol:
+            print(f'scan_domain[1, 1] has been reset from '
+                  f'{self.scan_domain[1, 1]} to {new_domain}.')
+            self.scan_domain[1, 1] = new_domain
+        if abs(self.scan_deltax * self.scan_deltay * 4 - self.scan_area) > tol**2:
             print('The sensor is not a rectangle. '
                   'Calculation will probably go wrong here!')
 
@@ -370,14 +241,13 @@ class Dipole(object):
             self.cuboids = np.copy(cuboid_data)
         else:
             try:
-                cuboid_path = Path()
+                cuboid_path = Path(cuboid_data)
                 # self.cuboids = np.loadtxt(self.cuboid_data, ndmin=2)
                 # We are assuming here that cuboid file does not have comments
-                self.cuboids = loadtxt_iter(cuboid_data, **cuboids_reader_kwargs)
+                self.cuboids = loadtxt_iter(cuboid_path, **cuboids_reader_kwargs)
             except TypeError:
                 print(f'{cuboid_data} is not a valid file name and cannot be '
                       'loaded. You can also try an np.ndarray or np.matrix')
-                raise
 
         self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor
         self.Npart = len(np.unique(self.cuboids[:, 6]))
@@ -396,7 +266,7 @@ class Dipole(object):
         Parameters
         ----------
         Origin
-            If True, use the QDM_domain lower left coordinates as the scan grid
+            If True, use the scan_domain lower left coordinates as the scan grid
             origin. If False, set scan grid origin at (0., 0.)
         verbose
             Set to True to print log information when populating the matrix
@@ -414,10 +284,10 @@ class Dipole(object):
         if method == 'cython':
             # The Cython function populates the matrix column-wise via a 1D arr
             pop_matrix_lib.populate_matrix_cython(
-                self.Forward_G, self.QDM_domain[0], self.scan_height,
+                self.Forward_G, self.scan_domain[0], self.scan_height,
                 np.ravel(self.cuboids), self.Ncub,
                 self.Npart, self.Ny, self.Nx,
-                self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
+                self.scan_spacing, self.scan_deltax, self.scan_deltay,
                 Origin, int(verbose))
 
         if method == 'cuda':
@@ -425,17 +295,17 @@ class Dipole(object):
                 raise Exception('The cuda method is not available. Stopping calculation')
 
             pop_matrix_cudalib.populate_matrix_cython(
-                self.Forward_G, self.QDM_domain[0], self.scan_height,
+                self.Forward_G, self.scan_domain[0], self.scan_height,
                 np.ravel(self.cuboids), self.Ncub,
                 self.Npart, self.Ny, self.Nx,
-                self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
+                self.scan_spacing, self.scan_deltax, self.scan_deltay,
                 Origin, int(verbose))
 
         elif method == 'numba':
             populate_matrix_numba(
-                self.Forward_G, self.QDM_domain, self.scan_height,
+                self.Forward_G, self.scan_domain, self.scan_height,
                 self.cuboids, self.Npart, self.Ny, self.Nx,
-                self.QDM_spacing, self.QDM_deltax, self.QDM_deltay,
+                self.scan_spacing, self.scan_deltax, self.scan_deltay,
                 Origin=Origin, verbose=verbose)
 
     _MethodOps = Literal['scipy_lapack',
@@ -462,7 +332,7 @@ class Dipole(object):
                 * scipy_lapack    :: Uses scipy lapack wrappers for dgetrs and
                                      dgetrf to compute :math:`\mathbf{M}` by
                                      solving the matrix least squares problem:
-                                     :math:`Gᵀ * G * M = Gᵀ * ϕ_{QDM}`
+                                     :math:`Gᵀ * G * M = Gᵀ * ϕ_{scan}`
                 * scipy_pinv      :: SVD method
                 * scipy_pinv2     :: (Deprecated) SVD method, calls pinv
                 * numpy_pinv      :: SVD method
@@ -474,7 +344,7 @@ class Dipole(object):
             calculate_inverse(method='numpy_pinv', rcond=1e-15)
         """
         SUCC_MSG = 'Inversion has been carried out'
-        QDM_flatten = self.QDM_matrix.flatten()
+        scan_flatten = self.scan_matrix.flatten()
         if self.Forward_G.shape[0] >= self.Forward_G.shape[1]:
             print(f'Start inversion with {self.Forward_G.shape[0]} '
                   f'knowns and {self.Forward_G.shape[1]} unknowns')
@@ -485,16 +355,16 @@ class Dipole(object):
                     warnings.warn('pinv2 is deprecated, using pinv instead',
                                   DeprecationWarning)
                 Inverse_G = spl.pinv(self.Forward_G, **method_kwargs)
-                self.Mag = np.matmul(Inverse_G, QDM_flatten)  # type: ignore
+                self.Mag = np.matmul(Inverse_G, scan_flatten)  # type: ignore
                 print(SUCC_MSG)
             elif method == 'numpy_pinv':
                 Inverse_G = np.linalg.pinv(self.Forward_G, **method_kwargs)
-                self.Mag = np.matmul(Inverse_G, QDM_flatten)
+                self.Mag = np.matmul(Inverse_G, scan_flatten)
                 print(SUCC_MSG)
 
             elif method == 'scipy_lapack':
                 # Solve G^t * phi = G^t * G * M
-                # where: M -> magnetization ; phi -> QDM measurements (1D arr)
+                # where: M -> magnetization ; phi -> scan measurements (1D arr)
                 # 1. Get LU decomp for G^t * G
                 # 2. Solve the linear equation using the LU dcomp as required
                 #    by the dgesrs solver
@@ -502,8 +372,8 @@ class Dipole(object):
                 GtG_shuffle, IPIV, INFO1 = spl.lapack.dgetrf(GtG)
                 if INFO1 == 0:
                     print('LU decomposition of G * G^t succeeded')
-                    GtQDM = np.matmul(self.Forward_G.T, QDM_flatten)
-                    self.Mag, INFO2 = spl.lapack.dgetrs(GtG_shuffle, IPIV, GtQDM)
+                    GtScan = np.matmul(self.Forward_G.T, scan_flatten)
+                    self.Mag, INFO2 = spl.lapack.dgetrs(GtG_shuffle, IPIV, GtScan)
                     if INFO2 != 0:
                         self.Mag = None
                         print(f'{INFO2}th argument has an'
@@ -572,9 +442,9 @@ class Dipole(object):
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
         self.Nx = int(
-            (self.QDM_domain[1, 0] - self.QDM_domain[0, 0]) / self.QDM_spacing) + 1
+            (self.scan_domain[1, 0] - self.scan_domain[0, 0]) / self.scan_spacing) + 1
         self.Ny = int(
-            (self.QDM_domain[1, 1] - self.QDM_domain[0, 1]) / self.QDM_spacing) + 1
+            (self.scan_domain[1, 1] - self.scan_domain[0, 1]) / self.scan_spacing) + 1
 
         # Start the methods
         self.prepare_matrix(method=method_populate, verbose=verbose)
@@ -586,7 +456,7 @@ class Dipole(object):
 
     def obtain_magnetization(
             self,
-            QDM_data: Path or str or np.ndarray or np.matrix,
+            scan_data: Path or str or np.ndarray or np.matrix,
             cuboid_data: Path or str or np.ndarray or np.matrix,
             cuboid_scaling_factor: float,
             verbose: bool = True,
@@ -594,18 +464,19 @@ class Dipole(object):
             method_inverse: _MethodOps = 'scipy_pinv',
             **method_inverse_kwargs
             ):
-        """
-        A shortcut method to call three functions to compute the magnetization
-        of the grains.
+        """Shortcut method to compute the magnetization of the grains
+
+        It calls three methods: `read_files`, `prepare_matrix` and
+        `calculate_inverse`
 
         Parameters
         ----------
-        QDM_data
-            Matrix file, np.ndarray or np.matrix (Nx columns, Ny rows)
-            containing the QDM/scan data in T
+        scan_data
+            Matrix file, `np.ndarray` or `np.matrix` (Nx columns, Ny rows)
+            containing the scan data in T
         cuboid_data
             File, np.ndarray, or np.matrix (x, y, z, dx, dy, dz, index)
-            containing location and size grains in microm
+            containing location and size grains in micrometers
         cuboid_scaling_factor
             Scaling factor for the cuboid positions and lengths
         method_populate
@@ -615,7 +486,7 @@ class Dipole(object):
             `self.calculate_inverse` for details about the method parameters
         """
 
-        self.read_files(QDM_data, cuboid_data, cuboid_scaling_factor)
+        self.read_files(scan_data, cuboid_data, cuboid_scaling_factor)
         self.prepare_matrix(method=method_populate, verbose=verbose)
         self.calculate_inverse(method=method_inverse,
                                **method_inverse_kwargs)
@@ -661,7 +532,7 @@ class Dipole(object):
         filepath
             Optional path to file to save the forward field
         sigma
-            Standard deviation of Gaussian noise to be added in T
+            Standard deviation of Gaussian noise to be added in Tesla
 
         Returns
         -------
@@ -669,10 +540,10 @@ class Dipole(object):
             Optionally return forward magnetic field if no file path is input
         """
 
-        Forward_field = np.matmul(self.Forward_G, self.Mag) / self.QDM_area  # mag field
+        Forward_field = np.matmul(self.Forward_G, self.Mag) / self.scan_area  # mag field
         if sigma is not None:  # add Gaussian noise to the forward field
             error = np.random.normal(0, sigma, len(Forward_field))
-            self.sigma = sigma * 4 * self.QDM_deltax * self.QDM_deltay  # originally it is a flux
+            self.sigma = sigma * 4 * self.scan_deltax * self.scan_deltay  # originally it is a flux
             Forward_field = Forward_field + error
         if filepath is not None:
             np.save(filepath, Forward_field.reshape(self.Ny, self.Nx))
