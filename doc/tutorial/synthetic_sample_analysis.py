@@ -8,16 +8,16 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.14.1
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
 
 # # Analysis of a Synthetic Sample
 
-# We start by importing the corresponding modules
+# In this tutorial we analyze the magnetic signal of a set of grains in a synthetic sample, using SQUID magnetometry data and tomographic data. We start by importing the corresponding modules for the inversion:
 
-from mmt_dipole_inverse.tools.tools import set_max_num_threads
+from mmt_dipole_inverse_config import set_max_num_threads
 set_max_num_threads(4)
 
 import numpy as np
@@ -103,11 +103,12 @@ for m, mag in enumerate(MagNorms):
 
 dpinv_tools.plot.set_grain_geometries(mag_inv, spatial_scaling=1e6)
 
-# We can now plot the grain profiles and forward/inversion fields. Note that we scale the fields by the `QDM_area`:
+# We can now plot the grain profiles and forward/inversion fields. Note that we scale the fields by the `scan_area` to have the flux in Tesla rather than Tesla.m^2:
 
 f, ax = plt.subplots(figsize=(10, 10 * 200 / 350))
 dpinv_tools.plot.plot_grain_boundaries(mag_inv, ax)
-im = dpinv_tools.plot.plot_inversion_field(mag_inv, ax, scale_field=True)
+im = dpinv_tools.plot.plot_inversion_field(mag_inv, ax, 
+                                           scale_field=1/mag_inv.scan_area)
 plt.colorbar(im)
 ax.set_title('Inverted field')
 plt.show()

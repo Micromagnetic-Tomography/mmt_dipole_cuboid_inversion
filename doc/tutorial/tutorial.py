@@ -15,6 +15,8 @@
 
 # # Tutorial
 
+# In this tutorial we analyze the magnetic signal of a set of grains using Quantum Diamond Microscopy data and tomographic data. The former contains the magnetic signal of the grains and the latter both the position and geometry of every grain in the sample. The magnetic signal computed by the `Dipole` class of this library is in units of field per sensor area, i.e. `Tesla * m^2`.
+
 # ## Import base libraries
 
 # Before importing the main library we can set the maximum number of threads used by the library and the external libs such as Python and Scipy
@@ -29,7 +31,7 @@ import mmt_dipole_inverse as dpinv
 
 # ## Using the Dipole class
 
-# We first specify the location of the scan data and the tomographic data with the cuboid positions and dimensions.
+# We first specify the location of the QDM scan data and the tomographic data with the cuboid positions and dimensions.
 
 # +
 data_path = Path('../../chest/tutorial_qdm_data/')
@@ -90,6 +92,8 @@ mag_svd.obtain_magnetization(QDMfile, cuboidfile, cuboid_scaling_factor=1e-6,
 # The forward matrix has the following form:
 
 mag_svd.Forward_G
+
+# ## Results
 
 # We can directly plot the original scan data but in the next section we will use the more powerful plot tools from this library
 

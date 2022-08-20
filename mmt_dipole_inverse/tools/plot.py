@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
 # import matplotlib as mpl
 import numpy as np
@@ -36,7 +35,7 @@ def set_grain_geometries(DipoleIns,
             with the coordinates of the centroid of the merged shapely polygon
         spatial_scaling
             Scaling factor for the coordinates. This same scaling is applied
-            to the limits of the QDM scan data and inversion results
+            to the limits of the scan data and inversion results
     """
 
     DipoleIns.cuboid_idxs = DipoleIns.cuboids[:, 6].astype(np.int32)
@@ -62,9 +61,7 @@ def plot_grain_boundaries(DipoleIns, ax,
                           boundaries_args=dict(ec=(0, 0, 0, 1)),
                           labels_args=dict(ha='center', va='center'),
                           tol=1e-7):
-    """
-    Plots the grain boundaries viewed from a bird eye perspective at the
-    z-axis
+    """Plots the grain boundaries viewed from a z-axis bird eye perspective
 
     Notes
     -----
@@ -116,12 +113,11 @@ def plot_magnetization_on_grains(DipoleIns,
                                  grain_labels=True,
                                  labels_args=dict(ha='center', va='center'),
                                  tol=1e-7):
-    """
-    Plots the magnetization of grains with colorscale on a Matplotlib axis
+    """Plots the magnetization of grains with colorscale on a Matplotlib axis
 
     Notes
     -----
-    Requires set_grain_geometries to be applied to DipoleIns beforehand
+    Requires `set_grain_geometries` to be applied to `DipoleIns` beforehand
 
     Parameters
     ----------
@@ -133,8 +129,8 @@ def plot_magnetization_on_grains(DipoleIns,
         Color grains using a log scale of the magnetization
     grain_plot_args
         Arguments to the matplotlib PolyCollection handling the plotting of
-        the grains. For example, set the colormap and clim (color limits) of
-        the grains
+        the grains. For example, set the `colormap` and `clim` (color limits)
+        of the grains
     grain_labels
         Draw index labels at the centroid of the grains
     labels_args
@@ -176,10 +172,9 @@ def plot_magnetization_on_grains(DipoleIns,
 
 def plot_scan_field(DipoleIns,
                     ax,
-                    scale_field=True,
+                    scale_field=None,
                     imshow_args=dict(cmap='magma')):
-    """
-    Plots the original scan field data
+    """Plots the original scan field data
 
     Parameters
     ----------
@@ -188,7 +183,7 @@ def plot_scan_field(DipoleIns,
     ax
         Matplotlib axis
     scale_field
-        If True the field is scaled by the QDM_area value
+        If specified, the field is scaled by this value
     imshow_args
         Extra arguments passed to the imshow plot
 
@@ -200,18 +195,18 @@ def plot_scan_field(DipoleIns,
 
     scale = DipoleIns.spatial_scaling
 
-    dx = scale * DipoleIns.QDM_deltax
-    dy = scale * DipoleIns.QDM_deltay
+    dx = scale * DipoleIns.scan_deltax
+    dy = scale * DipoleIns.scan_deltay
 
-    scanf = DipoleIns.QDM_matrix
+    scanf = DipoleIns.scan_matrix
     if scale_field:
-        scanf /= DipoleIns.QDM_area
+        np.multiply(scanf, scale_field, out=scanf)
 
     im = ax.imshow(scanf, origin='lower',
-                   extent=[scale * DipoleIns.QDM_domain[0, 0] - dx,
-                           scale * DipoleIns.QDM_domain[1, 0] + dx,
-                           scale * DipoleIns.QDM_domain[0, 1] - dy,
-                           scale * DipoleIns.QDM_domain[1, 1] + dy],
+                   extent=[scale * DipoleIns.scan_domain[0, 0] - dx,
+                           scale * DipoleIns.scan_domain[1, 0] + dx,
+                           scale * DipoleIns.scan_domain[0, 1] - dy,
+                           scale * DipoleIns.scan_domain[1, 1] + dy],
                    **imshow_args)
 
     return im
@@ -219,10 +214,9 @@ def plot_scan_field(DipoleIns,
 
 def plot_inversion_field(DipoleIns,
                          ax,
-                         scale_field=True,
+                         scale_field=None,
                          imshow_args=dict(cmap='magma')):
-    """
-    Plots the inverted field calculated with the Dipole class
+    """Plots the inverted field calculated with the Dipole class
 
     Parameters
     ----------
@@ -231,7 +225,7 @@ def plot_inversion_field(DipoleIns,
     ax
         Matplotlib axis
     scale_field
-        If True the field is scaled by the QDM_area value
+        If specified the field is scaled by this value
     imshow_args
         Extra arguments passed to the imshow plot
 
@@ -242,18 +236,18 @@ def plot_inversion_field(DipoleIns,
     """
     scale = DipoleIns.spatial_scaling
 
-    dx = scale * DipoleIns.QDM_deltax
-    dy = scale * DipoleIns.QDM_deltay
+    dx = scale * DipoleIns.scan_deltax
+    dy = scale * DipoleIns.scan_deltay
 
     inv_field = (DipoleIns.Forward_G @ DipoleIns.Mag).reshape(DipoleIns.Ny, -1)
     if scale_field:
-        inv_field /= DipoleIns.QDM_area
+        np.multiply(inv_field, scale_field, out=inv_field)
 
     im = ax.imshow(inv_field, origin='lower',
-                   extent=[scale * DipoleIns.QDM_domain[0, 0] - dx,
-                           scale * DipoleIns.QDM_domain[1, 0] + dx,
-                           scale * DipoleIns.QDM_domain[0, 1] - dy,
-                           scale * DipoleIns.QDM_domain[1, 1] + dy],
+                   extent=[scale * DipoleIns.scan_domain[0, 0] - dx,
+                           scale * DipoleIns.scan_domain[1, 0] + dx,
+                           scale * DipoleIns.scan_domain[0, 1] - dy,
+                           scale * DipoleIns.scan_domain[1, 1] + dy],
                    **imshow_args)
 
     return im
@@ -261,7 +255,7 @@ def plot_inversion_field(DipoleIns,
 
 def plot_residual(DipoleIns,
                   ax,
-                  scale_residual=True,
+                  scale_residual=None,
                   imshow_args=dict(cmap='magma')):
     """
     Plots the residual from the inversion of the field
@@ -273,7 +267,7 @@ def plot_residual(DipoleIns,
     ax
         Matplotlib axis
     scale_residual
-        If True the residual is scaled by the QDM_area value
+        If specified the residual is scaled by this value
     imshow_args
         Extra arguments passed to the imshow plot
 
@@ -285,23 +279,23 @@ def plot_residual(DipoleIns,
 
     scale = DipoleIns.spatial_scaling
 
-    if scale_residual:
-        scale_res = DipoleIns.QDM_area
-    else:
+    if not scale_residual:
         scale_res = 1.
+    else:
+        scale_res = scale_residual
 
-    dx = scale * DipoleIns.QDM_deltax
-    dy = scale * DipoleIns.QDM_deltay
+    dx = scale * DipoleIns.scan_deltax
+    dy = scale * DipoleIns.scan_deltay
 
     Forward_field = (DipoleIns.Forward_G @ DipoleIns.Mag) / scale_res
     Forward_field.shape = (DipoleIns.Ny, DipoleIns.Nx)
-    res = Forward_field - DipoleIns.QDM_matrix / scale_res
+    res = Forward_field - DipoleIns.scan_matrix / scale_res
 
     im = ax.imshow(res, origin='lower',
-                   extent=[scale * DipoleIns.QDM_domain[0, 0] - dx,
-                           scale * DipoleIns.QDM_domain[1, 0] + dx,
-                           scale * DipoleIns.QDM_domain[0, 1] - dy,
-                           scale * DipoleIns.QDM_domain[1, 1] + dy],
+                   extent=[scale * DipoleIns.scan_domain[0, 0] - dx,
+                           scale * DipoleIns.scan_domain[1, 0] + dx,
+                           scale * DipoleIns.scan_domain[0, 1] - dy,
+                           scale * DipoleIns.scan_domain[1, 1] + dy],
                    **imshow_args)
 
     return im
