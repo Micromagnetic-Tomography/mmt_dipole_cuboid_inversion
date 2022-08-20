@@ -92,7 +92,7 @@ class Dipole(object):
         ----------
         scan_domain
             (2x2 numpy matrix) : Size (metres) of the scan domain as
-             np.array([[x1, y1], [x2, y2]])
+             `np.array([[x1, y1], [x2, y2]])`
         scan_spacing
             Distance between two adjacent scanning points in metres
         scan_deltax
@@ -117,12 +117,14 @@ class Dipole(object):
         Nx, Ny
         scan_domain
 
-        * The read_files function sets:
+        Notes
+        -----
+        The read_files function sets::
 
-        scan_matrix
-        cuboids
-        Npart
-        Ncub
+            scan_matrix
+            cuboids
+            Npart
+            Ncub
 
         """
 
@@ -188,8 +190,8 @@ class Dipole(object):
             containing the scan data in Tesla
         cuboid_data
             File path, `np.ndarray,` or `np.matrix` containing the location and
-            size of the grains in micrometer, with format::
-                (x, y, z, dx, dy, dz, index)
+            size of the grains in micrometer, with format
+            `(x, y, z, dx, dy, dz, index)`
         cuboid_scaling_factor
             Scaling factor for the cuboid positions and lengths
         tol

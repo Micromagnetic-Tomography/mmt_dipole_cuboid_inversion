@@ -26,16 +26,25 @@ def LEQ(a, b):
 
 
 def TupleMaxima(lst):
-    """
+    """Sorts a list of sequences to find locations to generate largest cuboid
+
     Given a list of sequences (or 2-sequences) perform:
-    - Sort them by their minimum value and invert sorting
-    - Choose the one with the largest minimum (first element in sorted list)
-      and append it to a list, say MAX
-    - Iterate through the other sequences
-      - If one of the iterated seq is not LEQ with the first element in MAX
-        (largest minimum) then append it to the MAX list
-        The next iteration will have to compare if the seq is not LEQ with the
-        two (or more) elements in MAX (and so on, MAX can grow during iteration)
+
+    * Sort them by their minimum value and invert sorting
+    * | Choose the one with the largest minimum (first element in sorted list)
+      | and append it to a list, say MAX
+    * Iterate through the other sequences
+
+      * | If one of the iterated seq is not LEQ with the first element in MAX
+        | (largest minimum) then append it to the MAX list. The next iteration
+        | will have to compare if the seq is not LEQ with the two (or more)
+        | elements in MAX (and so on, MAX can grow during iteration)
+
+    Parameters
+    ----------
+    lst
+        Sequence of lists
+
     """
     if lst == []:
         return []
@@ -76,7 +85,7 @@ def tolen(lst):
     """
     Converts a list lst  of 0,1 values to the lengths of cosecutive 1's
     to the right up to an element containing a 0
-    tolen( [0,0,1,1,1,0,0,1,1,0,1]) ->  [0,0,3,2,1,0,0,2,1,0,1]
+    `tolen( [0,0,1,1,1,0,0,1,1,0,1]) ->  [0,0,3,2,1,0,0,2,1,0,1]`
     """
     tsl = lst.tolist()
     tsl.reverse()
@@ -93,24 +102,25 @@ def tolen(lst):
 
 
 def get_voxel_file(fn):
-    """
+    """Reads voxel file and returns system properties to start decomposition
+
     Parameters
     ----------
     fn
         Text file with 4 columns: `index, x, y, z`. First row is skipped. The
-        data is in integer format, which represent the index and pixel
+        data is in integer format, which represent the grain-index and pixel
         coordinates. Column headers can have any name but should be in order.
 
     Returns
     -------
-    A 4-elements tuple: `(min, max, count, zeros_array)` where::
+    A 4-elements tuple: `(min, max, count, zeros_array)` where
+    |    min         -> minimum of x y z positions
+    |    max         -> maximum of x y z positions
+    |    count       -> number of voxels
+    |    zeros_array -> a 3D matrix with zeros and ones, with the dimensions
+    |                   according to the grain size, e.g. max_x - min_x
+    |                   Values 1 are placed where x y z positions are located
 
-        min         -> minimum of x y z positions
-        max         -> maximum of x y z positions
-        count       -> number of voxels
-        zeros_array -> a 3D matrix with zeros and ones, with the dimensions
-                       according to the grain size, e.g. max_x - min_x
-                       Values 1 are placed where x y z positions are located
     """
     # TODO: convert to Numpy
 
@@ -147,14 +157,17 @@ def get_voxel_file(fn):
     for p in zip(*pos):
         zarr[p] = 1
         ct += 1
-    return (mn, mx, ct, zarr)
+
+    # Assume grain index is the same for every pixel so we get only first idx
+    return (tbl['index'][0], mn, mx, ct, zarr)
 
 
 def findmax(layer, ldim, a, b):
-    """
-    For a layer (2D array) with dimensions (ldim[0], ldim[1])
+    """Find maximum
+
+    For a layer (2D array) with dimensions `(ldim[0], ldim[1])`
     layer is a 2D array with the number of consecutive 1s to the right
-    at positions row=a, col=b
+    at positions `row=a`, `col=b`
     """
     nmax = layer[a][b]
     cnt = 0
@@ -283,7 +296,7 @@ def CuboidDecomposition(fn, fnout, format_output=False):
         half the cuboid lenghts in every spatial dimension and the indexes
         as `x, y, z, dx, dy, dz, index`
     """
-    mn, mx, count, zarr = get_voxel_file(fn)
+    grain_idx, mn, mx, count, zarr = get_voxel_file(fn)
     print(f'{count} voxels in: {mn}, {mx}')
 
     totvol, t0, cublst = cuboid_decomposition_method(mn, zarr)
@@ -302,11 +315,11 @@ def CuboidDecomposition(fn, fnout, format_output=False):
                 r_min = [c - 0.5 for c in cub[1]]
                 r_max = [(cub[1][i] + cub[2][i] - 1 + 0.5) for i in range(3)]
                 dr = [0.5 * (r_max[i] - r_min[i]) for i in range(3)]
-                r_center = [(r_min[i] + 0.5 * dr[i]) for i in range(3)]
+                r_center = [(r_min[i] + dr[i]) for i in range(3)]
 
                 row = r_center
                 row.extend(dr)
-                row.extend([i + 1])
+                row.extend([grain_idx])
                 wrt.writerow(row)
         else:
             wrt.writerow(["xmin", "ymin", "zmin", "xmax", "ymax", "zmax"])
