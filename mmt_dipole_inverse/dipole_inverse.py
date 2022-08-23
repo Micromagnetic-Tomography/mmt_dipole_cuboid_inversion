@@ -186,8 +186,8 @@ class Dipole(object):
         Parameters
         ----------
         scan_data
-            File path, `np.ndarray` or `np.matrix` (`Nx` columns, `Ny` rows)
-            containing the scan data in Tesla
+            File path to a text or `npy` file, `np.ndarray` or `np.matrix` with
+            (`Nx` columns, `Ny` rows), containing the scan data in Tesla
         cuboid_data
             File path, `np.ndarray,` or `np.matrix` containing the location and
             size of the grains in micrometer, with format
@@ -207,10 +207,15 @@ class Dipole(object):
         else:
             try:
                 data_path = Path(scan_data)
+                if data_path.__str__().endswith('.npy'):
+                    self.scan_matrix = np.load(data_path)
+
                 # self.scan_matrix = np.loadtxt(self.scan_data) * self.scan_area
                 # Use a faster reader, assuming the scan file is separated by
                 # white spaces or another delimiter specified by reader_kwargs
-                self.scan_matrix = loadtxt_iter(data_path, **scan_matrix_reader_kwargs)
+                else:
+                    self.scan_matrix = loadtxt_iter(data_path,
+                                                    **scan_matrix_reader_kwargs)
             except TypeError:
                 print(f'{scan_data} is not a valid file name and cannot be '
                       'loaded. You can also try an np.ndarray or np.matrix')
