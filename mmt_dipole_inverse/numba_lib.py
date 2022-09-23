@@ -4,8 +4,8 @@ import numpy as np
 
 @nb.jit(nopython=True)
 def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
-                          Ny, Nx, scan_spacing, scan_deltax, scan_deltay,
-                          Origin, verbose=True):
+                          Ny, Nx, scan_spacing_x, scan_spacing_y,
+                          scan_deltax, scan_deltay, Origin, verbose=True):
     """
     Main function to populate the G matrix
 
@@ -66,9 +66,9 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
         # Loop over sensor measurements. Each sensor is in the xy
         # plane and has area delta^2
         for j in range(Ny):
-            sensor_pos[1] = eta0 + scan_spacing * j
+            sensor_pos[1] = eta0 + scan_spacing_y * j
             for i in range(Nx):
-                sensor_pos[0] = xi0 + scan_spacing * i
+                sensor_pos[0] = xi0 + scan_spacing_x * i
 
                 # The contribution of the flux for mx, my, mz
                 particle_flux[:] = 0

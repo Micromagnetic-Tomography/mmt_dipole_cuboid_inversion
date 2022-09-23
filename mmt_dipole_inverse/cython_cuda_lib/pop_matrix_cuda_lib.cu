@@ -6,7 +6,8 @@
 __global__ void pop_matrix_nv(double * G, double * cuboids, 
                               unsigned long long N_cuboids, 
                               unsigned long long Nx, unsigned long long Ny, unsigned long long Npart,
-                              double QDM_deltax, double QDM_deltay, double QDM_spacing,
+                              double scan_deltax, double scan_deltay,
+                              double scan_spacing_x, double scan_spacing_y,
                               double xi0, double eta0, double zeta0,
                               int verbose) {
 
@@ -53,8 +54,8 @@ __global__ void pop_matrix_nv(double * G, double * cuboids,
 
             double sensor_pos[3] = {0};
             sensor_pos[2] = zeta0;
-            sensor_pos[1] = eta0 + QDM_spacing * sy;
-            sensor_pos[0] = xi0 + QDM_spacing * sx;
+            sensor_pos[1] = eta0 + scan_spacing_y * sy;
+            sensor_pos[0] = xi0 + scan_spacing_x * sx;
 
             i_cuboid = 0;
             // i_cuboid_old = 0;
@@ -94,8 +95,8 @@ __global__ void pop_matrix_nv(double * G, double * cuboids,
                             for (double s3 = -1; s3 < 1.1;  s3 += 2) {
                                 for (double s4 = -1; s4 < 1.1;  s4 += 2) {
                                     for (double s5 = -1; s5 < 1.1;  s5 += 2) {
-                                        x = dr_cuboid[0] + s1 * cuboid_size[0] - s4 * QDM_deltax;
-                                        y = dr_cuboid[1] + s2 * cuboid_size[1] - s5 * QDM_deltay;
+                                        x = dr_cuboid[0] + s1 * cuboid_size[0] - s4 * scan_deltax;
+                                        y = dr_cuboid[1] + s2 * cuboid_size[1] - s5 * scan_deltay;
                                         z = dr_cuboid[2] + s3 * cuboid_size[2];
                                         sign = s1 * s2 * s3 * s4 * s5;
                                         x2 = x * x; y2 = y * y; z2 = z * z;
@@ -168,23 +169,23 @@ coordinates. If cuboids are shifted, Origin is False.
 */
 
 // G matrix     -> 1D array that comes from the Python array: (Nx * Ny, 3 * N_parts)
-// QDM_domain   -> array with 4 entries x1 y1 x2 y2
+// scan_domain   -> array with 4 entries x1 y1 x2 y2
 // cuboids      -> N_cuboids * 7 array
 void populate_matrix_cuda(double * G,
-                          double * QDM_domain, double scan_height,
+                          double * scan_domain, double scan_height,
                           double * cuboids,
                           unsigned long long N_cuboids, unsigned long long Npart,
                           unsigned long long Ny, unsigned long long Nx,
-                          double QDM_spacing,
-                          double QDM_deltax, double QDM_deltay,
+                          double scan_spacing,
+                          double scan_deltax, double scan_deltay,
                           int Origin, int verbose
                           ) {
 
 
     double xi0, eta0, zeta0;
     if (Origin == 1) {
-        xi0 = QDM_domain[0];
-        eta0 = QDM_domain[1];
+        xi0 = scan_domain[0];
+        eta0 = scan_domain[1];
         zeta0 = (-1) * scan_height;
     } else {
         xi0 = 0.0;
@@ -278,7 +279,7 @@ void populate_matrix_cuda(double * G,
         // Populate matrix in GPU:
         pop_matrix_nv<<<grid, block>>>(G_dev, cuboids_dev, 
                                        N_cuboids, Nx, Ny, Npart,
-                                       QDM_deltax, QDM_deltay, QDM_spacing,
+                                       scan_deltax, scan_deltay, scan_spacing,
                                        xi0, eta0, zeta0, verbose);
         cudaDeviceSynchronize();
 

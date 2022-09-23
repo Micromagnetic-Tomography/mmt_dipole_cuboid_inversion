@@ -17,15 +17,15 @@ coordinates. If cuboids are shifted, Origin is False.
 
 // G matrix     -> 1D array that comes from the Python array: (N_parts, Nx * Ny)
 //                 So it;s the transposed version of original G
-// QDM_domain   -> array with 4 entries x1 y1 x2 y2
+// scan_domain  -> array with 4 entries x1 y1 x2 y2
 // cuboids      -> N_part * 6 array
 void populate_matrix_C(double * G,
-                       double * QDM_domain, double scan_height,
+                       double * scan_domain, double scan_height,
                        double * cuboids,
                        unsigned long long N_cuboids, unsigned long long Npart,
                        unsigned long long Ny, unsigned long long Nx,
-                       double QDM_spacing,
-                       double QDM_deltax, double QDM_deltay,
+                       double scan_spacing_x, double scan_spacing_y,
+                       double scan_deltax, double scan_deltay,
                        int Origin, int verbose
                        ) {
 
@@ -33,8 +33,8 @@ void populate_matrix_C(double * G,
 
     double xi0, eta0, zeta0;
     if (Origin == 1) {
-        xi0 = QDM_domain[0];
-        eta0 = QDM_domain[1];
+        xi0 = scan_domain[0];
+        eta0 = scan_domain[1];
         zeta0 = (-1) * scan_height;
     } else {
         xi0 = 0.0;
@@ -79,8 +79,8 @@ void populate_matrix_C(double * G,
 
             double sensor_pos[3] = {0};
             sensor_pos[2] = zeta0;
-            sensor_pos[1] = eta0 + QDM_spacing * j;
-            sensor_pos[0] = xi0 + QDM_spacing * i;
+            sensor_pos[1] = eta0 + scan_spacing_y * j;
+            sensor_pos[0] = xi0 + scan_spacing_x * i;
 
             // The contribution of the flux for mx, my, mz
             for (int k = 0; k < 3; k++) particle_flux[k] = 0.0;
@@ -108,8 +108,8 @@ void populate_matrix_C(double * G,
                         for (double s3 = -1; s3 < 1.1;  s3 += 2) {
                             for (double s4 = -1; s4 < 1.1;  s4 += 2) {
                                 for (double s5 = -1; s5 < 1.1;  s5 += 2) {
-                                    x = dr_cuboid[0] + s1 * cuboid_size[0] - s4 * QDM_deltax;
-                                    y = dr_cuboid[1] + s2 * cuboid_size[1] - s5 * QDM_deltay;
+                                    x = dr_cuboid[0] + s1 * cuboid_size[0] - s4 * scan_deltax;
+                                    y = dr_cuboid[1] + s2 * cuboid_size[1] - s5 * scan_deltay;
                                     z = dr_cuboid[2] + s3 * cuboid_size[2];
                                     sign = s1 * s2 * s3 * s4 * s5;
                                     x2 = x * x; y2 = y * y; z2 = z * z;

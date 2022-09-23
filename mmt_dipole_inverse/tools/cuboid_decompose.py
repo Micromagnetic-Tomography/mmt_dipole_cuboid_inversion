@@ -129,8 +129,7 @@ def get_voxel_file(fn):
     # Using Numpy:
     tbl = np.loadtxt(fn, skiprows=1,
                      dtype=dict(names=('index', 'x', 'y', 'z'),
-                     formats=('i8', 'i8', 'i8', 'i8')))
-
+                                formats=('i8', 'i8', 'i8', 'i8')))
 
     # the arr array: X_pos Y_pos Z_pos
     # TODO: remove the names option, the file should be standard with x y z

@@ -1,4 +1,4 @@
-from mmt_dipole_inverse.tools import set_max_num_threads
+from mmt_dipole_inverse_config import set_max_num_threads
 set_max_num_threads(4)
 import numpy as np
 from pathlib import Path
@@ -32,18 +32,18 @@ def test_dipole_class():
     # area of QDM sensor -> necessary? --> use deltax * deltay
     QDM_area = 4e-12
     # thickness of sample -> Unnecessary
-    sample_height = 30e-6
+    # sample_height = 30e-6
     # distance between QDM and top sample
     scan_height = 2e-6
 
     dip_inversion = dpinv.Dipole(
         QDM_domain, QDM_spacing,
-        QDM_deltax, QDM_deltay, QDM_area, sample_height, scan_height)
+        QDM_deltax, QDM_deltay, QDM_area, scan_height)
 
     dip_inversion.read_files(QDMfile, cuboidfile, cuboid_scaling_factor=1e-6)
 
-    assert(dip_inversion.QDM_matrix.shape[0]) == 21
-    assert(dip_inversion.QDM_matrix.shape[1]) == 21
+    assert(dip_inversion.scan_matrix.shape[0]) == 21
+    assert(dip_inversion.scan_matrix.shape[1]) == 21
 
     print('Testing Numba pop matrix')
     dip_inversion.prepare_matrix(method='numba', verbose=True)
@@ -55,7 +55,7 @@ def test_dipole_class():
         assert abs(FG_copy[j, i] - dip_inversion.Forward_G[j, i]) < 1e-8
     print(dip_inversion.Forward_G[j, i])
 
-    dip_inversion.calculate_inverse(method='scipy_pinv2', rcond=1e-25)
+    dip_inversion.calculate_inverse(method='scipy_pinv2', atol=1e-25)
 
     Ms = 4.8e5
     # Check relative error is less than 1% = 0.01

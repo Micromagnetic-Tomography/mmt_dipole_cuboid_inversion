@@ -75,7 +75,7 @@ class Dipole(object):
 
     def __init__(self,
                  scan_domain: np.ndarray,
-                 scan_spacing: float,
+                 scan_spacing: float | Tuple[float, float],
                  scan_deltax: float,
                  scan_deltay: float,
                  scan_area: float,
@@ -94,7 +94,8 @@ class Dipole(object):
             (2x2 numpy matrix) : Size (metres) of the scan domain as
              `np.array([[x1, y1], [x2, y2]])`
         scan_spacing
-            Distance between two adjacent scanning points in metres
+            Distance between two adjacent scanning points in metres. Can be
+            passed as a float, if the spacing is the same in x and y, or as a tuple
         scan_deltax
             Half length of scan sensor
         scan_deltay
@@ -129,7 +130,10 @@ class Dipole(object):
         """
 
         self.scan_domain = scan_domain
-        self.scan_spacing = scan_spacing
+        if isinstance(scan_spacing, Tuple):
+            self.scan_spacing = scan_spacing
+        else:
+            self.scan_spacing = (scan_spacing, scan_spacing)
         self.scan_deltax = scan_deltax
         self.scan_deltay = scan_deltay
         self.scan_area = scan_area
@@ -222,12 +226,12 @@ class Dipole(object):
         # Set the limits of the scan domain
 
         self.Ny, self.Nx = self.scan_matrix.shape
-        new_domain = self.scan_domain[0, 0] + (self.Nx - 1) * self.scan_spacing
+        new_domain = self.scan_domain[0, 0] + (self.Nx - 1) * self.scan_spacing[0]
         if abs(new_domain - self.scan_domain[1, 0]) > tol:
             print(f'scan_domain[1, 0] has been reset from '
                   f'{self.scan_domain[1, 0]} to {new_domain}.')
             self.scan_domain[1, 0] = new_domain
-        new_domain = self.scan_domain[0, 1] + (self.Ny - 1) * self.scan_spacing
+        new_domain = self.scan_domain[0, 1] + (self.Ny - 1) * self.scan_spacing[1]
         if abs(new_domain - self.scan_domain[1, 1]) > tol:
             print(f'scan_domain[1, 1] has been reset from '
                   f'{self.scan_domain[1, 1]} to {new_domain}.')
@@ -289,8 +293,8 @@ class Dipole(object):
                 self.Forward_G, self.scan_domain[0], self.scan_height,
                 np.ravel(self.cuboids), self.Ncub,
                 self.Npart, self.Ny, self.Nx,
-                self.scan_spacing, self.scan_deltax, self.scan_deltay,
-                Origin, int(verbose))
+                self.scan_spacing[0], self.scan_spacing[1],
+                self.scan_deltax, self.scan_deltay, Origin, int(verbose))
 
         if method == 'cuda':
             if HASCUDA is False:
@@ -300,14 +304,16 @@ class Dipole(object):
                 self.Forward_G, self.scan_domain[0], self.scan_height,
                 np.ravel(self.cuboids), self.Ncub,
                 self.Npart, self.Ny, self.Nx,
-                self.scan_spacing, self.scan_deltax, self.scan_deltay,
+                self.scan_spacing[0], self.scan_spacing[1],
+                self.scan_deltax, self.scan_deltay,
                 Origin, int(verbose))
 
         elif method == 'numba':
             populate_matrix_numba(
                 self.Forward_G, self.scan_domain, self.scan_height,
                 self.cuboids, self.Npart, self.Ny, self.Nx,
-                self.scan_spacing, self.scan_deltax, self.scan_deltay,
+                self.scan_spacing[0], self.scan_spacing[1],
+                self.scan_deltax, self.scan_deltay,
                 Origin=Origin, verbose=verbose)
 
     _MethodOps = Literal['scipy_lapack',
