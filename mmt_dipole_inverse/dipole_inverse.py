@@ -413,60 +413,6 @@ class Dipole(object):
 
         return None
 
-    def calculate_forward(self,
-                          cuboid_data: np.ndarray or np.matrix,
-                          dip_mag: np.ndarray or np.matrix,
-                          cuboid_scaling_factor: float,
-                          sigma: Optional[float] = None,
-                          filepath: Optional[str] = None,
-                          verbose: bool = True,
-                          method_populate: _PrepMatOps = 'cython'):
-        """
-        A shortcut method to compute the forward magnetic field based on
-        the position and magnetization of the grains.
-
-        Parameters
-        ----------
-        cuboid_data
-            np.ndarray or np.matrix (x, y, z, dx, dy, dz, index) containing
-            location and half size grains in microm
-        dip_mag
-            np.ndarray or np.matrix containing the magnetization per grain
-            in x, y, and z-direction. Shape: number of grains x 3
-        cuboid_scaling_factor
-            Scaling factor for the cuboid positions and lengths
-        sigma
-            Standard deviation of Gaussian noise to be added in T
-        filepath
-            Optional path to file to save the forward field
-        method_populate
-            Method to populate the forward matrix
-
-        Returns
-        -------
-        Forward_field
-            Optionally return forward magnetic field if no filepath
-            is inputted
-        """
-        self.Mag = dip_mag.flatten()
-        self.cuboids = np.copy(cuboid_data)
-        self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor
-
-        self.Npart = len(np.unique(self.cuboids[:, 6]))
-        self.Ncub = len(self.cuboids[:, 6])
-        self.Nx = int(
-            (self.scan_domain[1, 0] - self.scan_domain[0, 0]) / self.scan_spacing) + 1
-        self.Ny = int(
-            (self.scan_domain[1, 1] - self.scan_domain[0, 1]) / self.scan_spacing) + 1
-
-        # Start the methods
-        self.prepare_matrix(method=method_populate, verbose=verbose)
-        if filepath is not None:
-            self.forward_field(forward_field, sigma=sigma)
-        else:
-            Forward_field = self.forward_field(sigma=sigma)
-            return Forward_field
-
     def obtain_magnetization(
             self,
             scan_data: Path or str or np.ndarray or np.matrix,
@@ -475,8 +421,7 @@ class Dipole(object):
             verbose: bool = True,
             method_populate: _PrepMatOps = 'cython',
             method_inverse: _MethodOps = 'scipy_pinv',
-            **method_inverse_kwargs
-            ):
+            **method_inverse_kwargs):
         """Shortcut method to compute the magnetization of the grains
 
         It calls three methods: `read_files`, `prepare_matrix` and
