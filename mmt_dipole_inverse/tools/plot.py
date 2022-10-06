@@ -198,7 +198,7 @@ def plot_scan_field(DipoleIns,
     dx = scale * DipoleIns.scan_deltax
     dy = scale * DipoleIns.scan_deltay
 
-    scanf = DipoleIns.scan_matrix
+    scanf = np.copy(DipoleIns.scan_matrix)
     if scale_field:
         np.multiply(scanf, scale_field, out=scanf)
 
