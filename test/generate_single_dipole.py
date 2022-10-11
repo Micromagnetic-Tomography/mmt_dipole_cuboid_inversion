@@ -1,6 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import textwrap
+from pathlib import Path
 
 
 def dipole_Bz(dip_r, dip_m, pos_r, Bz_grid):
@@ -13,15 +14,14 @@ def dipole_Bz(dip_r, dip_m, pos_r, Bz_grid):
 
     Parameters
     ----------
-
     dip_r
         N x 3 array with dipole positions (m)
     dip_m
         N x 3 array with dipole moments (Am^2)
     pos_r
         M X P x 3 array (grid) with coordinates of measurement point (m)
-
     """
+
     # For every row of dip_r (Nx3 array), subtract pos_r (1x3 array)
     for j in range(pos_r.shape[0]):
         for i in range(pos_r.shape[1]):
@@ -38,12 +38,13 @@ def dipole_Bz(dip_r, dip_m, pos_r, Bz_grid):
 
             # Only return Bz
             res = f + g
-
-
             Bz_grid[j, i] = np.sum(res)
 
     return None
 
+
+# Get this script location
+thisloc = Path(__file__).resolve().parent
 
 Lx, Ly = 40.0, 40.0
 res = 21
@@ -69,7 +70,7 @@ for dipole_depth in [6, 8, 10, 12, 14, 16, 20, 30, 40, 60]:
     dipole_mus = Ms * vols[:, np.newaxis] * np.array([[0., 1., 0.]])
     # Bzgrid is rewritten with this function
     dipole_Bz(dipole_pos, dipole_mus, scan_grid_coords, Bz_grid)
-    np.savetxt(f'single_dipole_depth_{dipole_depth:02d}_Bzgrid.txt',
+    np.savetxt(thisloc / f'single_dipole_depth_{dipole_depth:02d}_Bzgrid.txt',
                Bz_grid, fmt='%.18e')
 
     # f, ax = plt.subplots()
@@ -80,8 +81,7 @@ for dipole_depth in [6, 8, 10, 12, 14, 16, 20, 30, 40, 60]:
     cuboid_file = textwrap.dedent(
         f"""
         {Lx * 0.5:.1f} {Ly * 0.5:.1f} {dipole_depth:.1f} 0.5 0.5 0.5 4
-        """
-        )
+        """)
 
-    with open(f'single_dipole_depth_{dipole_depth:02d}_cuboids.txt', 'w') as cf:
+    with open(thisloc / f'single_dipole_depth_{dipole_depth:02d}_cuboids.txt', 'w') as cf:
         cf.write(cuboid_file)

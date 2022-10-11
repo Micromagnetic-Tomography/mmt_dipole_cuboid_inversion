@@ -13,12 +13,12 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
     -----
     The outer while loop will last until reaching the total number of cuboids
     in the sample. Adjacent cuboids belong to a single particle, which is
-    indexed in the 6th element of the cuboids array. The population of the G
+    indexed in the 6th element of the cuboids array. The population of the `G`
     matrix is performed column wise for every particle. For each cuboid
     belonging to a particle, their contribution to the magnetic flux is summed
-    up for every sensor measurement in steps of delta in the xy plane, which
-    are given by the loops with the i-j indexes. The flux is stored column
-    wise.
+    up for every sensor measurement in steps of `delta_*` in the xy plane,
+    which are given by the loops with the `i-j` indexes. The flux is stored
+    column wise.
 
     Parameters
     ----------
@@ -35,7 +35,7 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
         xi0, eta0 = scan_domain[0, :]
     else:
         xi0, eta0 = 0., 0.
-    zeta0 = (-1) * scan_height
+    zeta0 = scan_height
     sensor_pos = np.zeros(3)
     sensor_pos[2] = zeta0
 
@@ -82,7 +82,10 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
                 while i_particle == i_particle_prev:
                     #                     print(i_particle, i, j, i_cuboid)
                     cuboid_center[:] = cuboids[i_cuboid, :3]
-                    dr_cuboid[:] = cuboid_center - sensor_pos
+
+                    # dr_cuboid[:] = sensor_pos - cuboid_center  # NEW CODE
+                    dr_cuboid[:] = cuboid_center - sensor_pos  # ORIGINAL CODE
+
                     # Cuboid sizes:
                     cuboid_size[:] = cuboids[i_cuboid, 3:6]
 
@@ -93,9 +96,17 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
                             for s3 in [-1, 1]:
                                 for s4 in [-1, 1]:
                                     for s5 in [-1, 1]:
+
+                                        # NEW CODE:
+                                        # x = dr_cuboid[0] - s1 * cuboid_size[0] + s4 * scan_deltax
+                                        # y = dr_cuboid[1] - s2 * cuboid_size[1] + s5 * scan_deltay
+                                        # z = dr_cuboid[2] - s3 * cuboid_size[2]
+
+                                        # ORIGINAL CODE:
                                         x = dr_cuboid[0] + s1 * cuboid_size[0] - s4 * scan_deltax
                                         y = dr_cuboid[1] + s2 * cuboid_size[1] - s5 * scan_deltay
                                         z = dr_cuboid[2] + s3 * cuboid_size[2]
+
                                         sign = s1 * s2 * s3 * s4 * s5
                                         x2, y2, z2 = x ** 2, y ** 2, z ** 2
                                         r2 = x2 + y2 + z2

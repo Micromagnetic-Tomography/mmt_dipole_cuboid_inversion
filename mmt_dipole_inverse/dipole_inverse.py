@@ -155,7 +155,6 @@ class Dipole(object):
             'Scan delta-x'
             'Scan delta-y'
             'Scan area'
-            'Sample height'
             'Scan height'
         """
         # Load metadata

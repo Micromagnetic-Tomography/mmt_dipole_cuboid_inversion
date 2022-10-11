@@ -2,10 +2,10 @@ from mmt_dipole_inverse_config import set_max_num_threads
 set_max_num_threads(4)
 import numpy as np
 from pathlib import Path
-import time
-import matplotlib.pyplot as plt
+# import time
+# import matplotlib.pyplot as plt
 import mmt_dipole_inverse as dpinv  # noqa: E402
-import mmt_dipole_inverse.tools as dpinvt  # noqa: E402
+# import mmt_dipole_inverse.tools as dpinvt  # noqa: E402
 try:
     # the cuda populate_matrix function
     from mmt_dipole_inverse.cython_cuda_lib import pop_matrix_cudalib
@@ -29,6 +29,8 @@ def test_three_cuboids():
 
     ScanMatrix = dataloc / 'bz_cuboids_three-particles.npy'
     cuboidfile = dataloc / 'cuboids.txt'
+    cuboid_data = np.loadtxt(cuboidfile, skiprows=0)
+    # cuboid_data[:, 2] *= -1
 
     # Scan surface properties (from the semi-analytical model)
     scan_domain = np.array([[-2.5, -2.5], [2.5, 2.5]]) * 1e-6
@@ -36,23 +38,23 @@ def test_three_cuboids():
     scan_deltax = 25e-9
     scan_deltay = 25e-9
     scan_area = 2500e-18
-    scan_height = 500e-9
+    scan_height = -500e-9
 
     dip_inversion = dpinv.Dipole(scan_domain, scan_spacing, scan_deltax,
                                  scan_deltay, scan_area, scan_height)
 
     # Cuboid file units in nm
-    dip_inversion.read_files(ScanMatrix, cuboidfile,
+    dip_inversion.read_files(ScanMatrix, cuboid_data,
                              cuboid_scaling_factor=1e-9)
     # print(dip_inversion.cuboids)
 
-    dip_inversion.prepare_matrix(method='cython', verbose=True)
-    FG_copy = np.copy(dip_inversion.Forward_G)
+    dip_inversion.prepare_matrix(method='numba', verbose=True)
+    # FG_copy = np.copy(dip_inversion.Forward_G)
 
     # dip_inversion.calculate_inverse(method='scipy_pinv', atol=1e-30)
-    dip_inversion.calculate_inverse(method='scipy_pinv', atol=1e-25)
+    dip_inversion.calculate_inverse(method='scipy_pinv', rtol=1e-30)
 
-    cube_props_theory = np.loadtxt('./test_three_cub_data/cuboids_properties.dat')
+    cube_props_theory = np.loadtxt(thisloc / './test_three_cub_data/cuboids_properties.dat')
     # Mas values at the final column
     MagTheory = cube_props_theory[:, -1]
     MagInversion = np.linalg.norm(dip_inversion.Mag.reshape(-1, 3), axis=1)

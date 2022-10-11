@@ -186,11 +186,11 @@ void populate_matrix_cuda(double * G,
     if (Origin == 1) {
         xi0 = scan_domain[0];
         eta0 = scan_domain[1];
-        zeta0 = (-1) * scan_height;
+        zeta0 = scan_height;
     } else {
         xi0 = 0.0;
         eta0 = 0.0;
-        zeta0 = (-1) * scan_height;
+        zeta0 = scan_height;
     }
 
     size_t G_bytes = sizeof(double) * Nx * Ny * 3 * Npart;

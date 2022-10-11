@@ -35,11 +35,11 @@ void populate_matrix_C(double * G,
     if (Origin == 1) {
         xi0 = scan_domain[0];
         eta0 = scan_domain[1];
-        zeta0 = (-1) * scan_height;
+        zeta0 = scan_height;
     } else {
         xi0 = 0.0;
         eta0 = 0.0;
-        zeta0 = (-1) * scan_height;
+        zeta0 = scan_height;
     }
 
     unsigned long long i_cuboid = 0;
@@ -137,7 +137,7 @@ void populate_matrix_C(double * G,
                     } // s4
                 } // s5
 
-                // Finish cuboidsloop in the particle i_particle_prev
+                // Finish cuboids loop in the particle i_particle_prev
                 // and continue with the next sensor measurement
 
                 // scale flux measurement:
