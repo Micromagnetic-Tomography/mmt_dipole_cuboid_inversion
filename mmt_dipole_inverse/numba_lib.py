@@ -30,14 +30,18 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
         If False, the scan data origin is set at (0., 0.)
     """
 
+    RefMult = (-1.) if (scan_height < 0) else 1.
+
     Cm = 1e-7
     if Origin is True:
         xi0, eta0 = scan_domain[0, :]
     else:
         xi0, eta0 = 0., 0.
-    zeta0 = scan_height
+    zeta0 = scan_height * RefMult
     sensor_pos = np.zeros(3)
-    sensor_pos[2] = zeta0
+
+    sensor_pos[2] = zeta0  # New code
+    # sensor_pos[2] = (-1.) * zeta0  # Original code
 
     # Definitions
     particle_flux = np.zeros(3)
@@ -80,11 +84,11 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
                 # While the cuboid has particle index of the
                 # particle being analysed
                 while i_particle == i_particle_prev:
-                    #                     print(i_particle, i, j, i_cuboid)
+                    # print(i_particle, i, j, i_cuboid)
                     cuboid_center[:] = cuboids[i_cuboid, :3]
 
-                    # dr_cuboid[:] = sensor_pos - cuboid_center  # NEW CODE
-                    dr_cuboid[:] = cuboid_center - sensor_pos  # ORIGINAL CODE
+                    dr_cuboid[:] = sensor_pos - cuboid_center  # NEW CODE
+                    # dr_cuboid[:] = cuboid_center - sensor_pos  # ORIGINAL CODE
 
                     # Cuboid sizes:
                     cuboid_size[:] = cuboids[i_cuboid, 3:6]
@@ -98,16 +102,16 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
                                     for s5 in [-1, 1]:
 
                                         # NEW CODE:
-                                        # x = dr_cuboid[0] - s1 * cuboid_size[0] + s4 * scan_deltax
-                                        # y = dr_cuboid[1] - s2 * cuboid_size[1] + s5 * scan_deltay
-                                        # z = dr_cuboid[2] - s3 * cuboid_size[2]
+                                        x = RefMult * (dr_cuboid[0] - s1 * cuboid_size[0] + s4 * scan_deltax)
+                                        y = RefMult * (dr_cuboid[1] - s2 * cuboid_size[1] + s5 * scan_deltay)
+                                        z = RefMult * (dr_cuboid[2] - s3 * cuboid_size[2])
 
                                         # ORIGINAL CODE:
-                                        x = dr_cuboid[0] + s1 * cuboid_size[0] - s4 * scan_deltax
-                                        y = dr_cuboid[1] + s2 * cuboid_size[1] - s5 * scan_deltay
-                                        z = dr_cuboid[2] + s3 * cuboid_size[2]
+                                        # x = dr_cuboid[0] + s1 * cuboid_size[0] - s4 * scan_deltax
+                                        # y = dr_cuboid[1] + s2 * cuboid_size[1] - s5 * scan_deltay
+                                        # z = dr_cuboid[2] + s3 * cuboid_size[2]
 
-                                        sign = s1 * s2 * s3 * s4 * s5
+                                        sign = (s1 * s2 * s3 * s4 * s5)
                                         x2, y2, z2 = x ** 2, y ** 2, z ** 2
                                         r2 = x2 + y2 + z2
                                         r = np.sqrt(r2)
@@ -131,7 +135,7 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
                     # and continue with the next sensor measurement
 
                     # scale flux measurement:
-                    particle_flux[:] += -Cm * get_flux
+                    particle_flux[:] += -Cm * RefMult * get_flux
                     i_cuboid += 1
                     i_particle = int(cuboids[i_cuboid, 6])
 
