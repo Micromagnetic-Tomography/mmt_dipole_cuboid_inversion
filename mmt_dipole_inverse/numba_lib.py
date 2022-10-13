@@ -31,13 +31,15 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
     """
 
     RefMult = (-1.) if (scan_height < 0) else 1.
+    print("REF", RefMult)
 
     Cm = 1e-7
     if Origin is True:
         xi0, eta0 = scan_domain[0, :]
     else:
         xi0, eta0 = 0., 0.
-    zeta0 = scan_height * RefMult
+
+    zeta0 = scan_height
     sensor_pos = np.zeros(3)
 
     sensor_pos[2] = zeta0  # New code
@@ -131,11 +133,11 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
                                         get_flux[1] += sign * F210
                                         get_flux[2] += sign * F22m
 
-                    # Finish cuboidsloop in the particle i_particle_prev
+                    # Finish cuboids loop in the particle i_particle_prev
                     # and continue with the next sensor measurement
 
                     # scale flux measurement:
-                    particle_flux[:] += -Cm * RefMult * get_flux
+                    particle_flux[:] += -Cm * get_flux
                     i_cuboid += 1
                     i_particle = int(cuboids[i_cuboid, 6])
 

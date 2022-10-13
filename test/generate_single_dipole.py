@@ -67,7 +67,7 @@ for dipole_depth in [6, 8, 10, 12, 14, 16, 20, 30, 40, 60]:
     dipole_pos = np.array([[Lx * 0.5, Ly * 0.5, -dipole_depth]]) * 1e-6
     Ms = 4.8e5
     vols = np.array([1 * 1 * 1.]) * 1e-18
-    dipole_mus = Ms * vols[:, np.newaxis] * np.array([[0., 1., 0.]])
+    dipole_mus = Ms * vols[:, np.newaxis] * np.array([[0., 1., 1.]]) / np.sqrt(2.)
     # Bzgrid is rewritten with this function
     dipole_Bz(dipole_pos, dipole_mus, scan_grid_coords, Bz_grid)
     np.savetxt(thisloc / f'single_dipole_depth_{dipole_depth:02d}_Bzgrid.txt',
