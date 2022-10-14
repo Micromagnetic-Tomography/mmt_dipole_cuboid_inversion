@@ -103,7 +103,12 @@ class Dipole(object):
         scan_area
             Area of scan sensor in square metres
         scan_height
-            Distance between sample and scan surface in metres
+            Distance between sample and scan surface in metres. If this
+            parameter is defined negative, it is assumed that we have a left
+            handed coordinate system with the z-direction pointing downwards,
+            i.e. towards depth, so cuboids must be defined with positive
+            z-positions. If `scan_height` is positive, then we have a right
+            handed system and cuboid's z-positions must have negative values
 
         Attributes
         ----------

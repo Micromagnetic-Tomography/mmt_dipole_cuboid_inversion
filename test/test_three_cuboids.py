@@ -25,6 +25,8 @@ def test_three_cuboids():
     particles and their demag field, which is saved in `npy` format. The field
     and particle theoretical values are located in the `test_three_cub_data/`
     directory. The scan surface properties are specified here.
+
+    Here we use a RHS, so z is pointing towards depth (scanning surf negative pos)
     """
 
     ScanMatrix = dataloc / 'bz_cuboids_three-particles.npy'
@@ -53,6 +55,7 @@ def test_three_cuboids():
 
     # dip_inversion.calculate_inverse(method='scipy_pinv', atol=1e-30)
     dip_inversion.calculate_inverse(method='scipy_pinv', rtol=1e-30)
+    print(dip_inversion.Mag)
 
     cube_props_theory = np.loadtxt(thisloc / './test_three_cub_data/cuboids_properties.dat')
     # Mas values at the final column

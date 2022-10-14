@@ -22,16 +22,23 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
 
     Parameters
     ----------
+    G
+        Reference to the forward matrix (np array) to be populated
     scan_domain
         Array of size 2x2 with the lower left and upper right coordinates of
         the scan surface
+    scan_height
+        If positive, z is oriented upwards, and grains are defined with
+        negative z-values. If negative, z is oriented towards depth and grains
+        are defined with positive z-values
     Origin
         If True the scan data is set to the QDM lower left corner coordinates.
         If False, the scan data origin is set at (0., 0.)
     """
 
+    # Multip factor if the scan surface is defined in the pos or neg z-position
+    # If negative, for instance, z is towards depth, grains are in positive height values
     RefMult = (-1.) if (scan_height < 0) else 1.
-    print("REF", RefMult)
 
     Cm = 1e-7
     if Origin is True:
@@ -43,7 +50,6 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
     sensor_pos = np.zeros(3)
 
     sensor_pos[2] = zeta0  # New code
-    # sensor_pos[2] = (-1.) * zeta0  # Original code
 
     # Definitions
     particle_flux = np.zeros(3)
@@ -56,8 +62,6 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
     i_particle_prev = int(cuboids[0, 6])
     i_particle = i_particle_prev
 
-    # print('max cub =', Npart)
-    # print('G matrix', G.shape)
     # If grains are not numbered in order this always works
     i_particle_0_N = 0
 
@@ -89,8 +93,7 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
                     # print(i_particle, i, j, i_cuboid)
                     cuboid_center[:] = cuboids[i_cuboid, :3]
 
-                    dr_cuboid[:] = sensor_pos - cuboid_center  # NEW CODE
-                    # dr_cuboid[:] = cuboid_center - sensor_pos  # ORIGINAL CODE
+                    dr_cuboid[:] = sensor_pos - cuboid_center
 
                     # Cuboid sizes:
                     cuboid_size[:] = cuboids[i_cuboid, 3:6]
@@ -103,15 +106,12 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
                                 for s4 in [-1, 1]:
                                     for s5 in [-1, 1]:
 
-                                        # NEW CODE:
+                                        # In coord system with z positive upwards,
+                                        # dr_cuboid=sensor_p-cuboid_c is positive -> log well defined
+                                        # If z is positive downwards, it's best to use: cuboid_c - sensor_p
                                         x = RefMult * (dr_cuboid[0] - s1 * cuboid_size[0] + s4 * scan_deltax)
                                         y = RefMult * (dr_cuboid[1] - s2 * cuboid_size[1] + s5 * scan_deltay)
                                         z = RefMult * (dr_cuboid[2] - s3 * cuboid_size[2])
-
-                                        # ORIGINAL CODE:
-                                        # x = dr_cuboid[0] + s1 * cuboid_size[0] - s4 * scan_deltax
-                                        # y = dr_cuboid[1] + s2 * cuboid_size[1] - s5 * scan_deltay
-                                        # z = dr_cuboid[2] + s3 * cuboid_size[2]
 
                                         sign = (s1 * s2 * s3 * s4 * s5)
                                         x2, y2, z2 = x ** 2, y ** 2, z ** 2
@@ -136,7 +136,7 @@ def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
                     # Finish cuboids loop in the particle i_particle_prev
                     # and continue with the next sensor measurement
 
-                    # scale flux measurement:
+                    # Scale flux measurement:
                     particle_flux[:] += -Cm * get_flux
                     i_cuboid += 1
                     i_particle = int(cuboids[i_cuboid, 6])

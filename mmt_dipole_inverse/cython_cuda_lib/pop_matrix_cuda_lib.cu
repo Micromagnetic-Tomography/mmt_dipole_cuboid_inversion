@@ -8,7 +8,7 @@ __global__ void pop_matrix_nv(double * G, double * cuboids,
                               unsigned long long Nx, unsigned long long Ny, unsigned long long Npart,
                               double scan_deltax, double scan_deltay,
                               double scan_spacing_x, double scan_spacing_y,
-                              double xi0, double eta0, double zeta0,
+                              double xi0, double eta0, double zeta0, double RefMult,
                               int verbose) {
 
     double Cm = 1e-7;
@@ -95,9 +95,9 @@ __global__ void pop_matrix_nv(double * G, double * cuboids,
                             for (double s3 = -1; s3 < 1.1;  s3 += 2) {
                                 for (double s4 = -1; s4 < 1.1;  s4 += 2) {
                                     for (double s5 = -1; s5 < 1.1;  s5 += 2) {
-                                        x = dr_cuboid[0] + s1 * cuboid_size[0] - s4 * scan_deltax;
-                                        y = dr_cuboid[1] + s2 * cuboid_size[1] - s5 * scan_deltay;
-                                        z = dr_cuboid[2] + s3 * cuboid_size[2];
+                                        x = RefMult * (dr_cuboid[0] + s1 * cuboid_size[0] - s4 * scan_deltax);
+                                        y = RefMult * (dr_cuboid[1] + s2 * cuboid_size[1] - s5 * scan_deltay);
+                                        z = RefMult * (dr_cuboid[2] + s3 * cuboid_size[2]);
                                         sign = s1 * s2 * s3 * s4 * s5;
                                         x2 = x * x; y2 = y * y; z2 = z * z;
                                         r2 = x2 + y2 + z2;
@@ -182,16 +182,16 @@ void populate_matrix_cuda(double * G,
                           ) {
 
 
+    double RefMult = (scan_height < 0) ? -1.0 : 1.0;
     double xi0, eta0, zeta0;
     if (Origin == 1) {
         xi0 = scan_domain[0];
         eta0 = scan_domain[1];
-        zeta0 = scan_height;
     } else {
         xi0 = 0.0;
         eta0 = 0.0;
-        zeta0 = scan_height;
     }
+    zeta0 = scan_height;
 
     size_t G_bytes = sizeof(double) * Nx * Ny * 3 * Npart;
     size_t cuboids_bytes = sizeof(double) * 7 * N_cuboids;
@@ -280,7 +280,7 @@ void populate_matrix_cuda(double * G,
         pop_matrix_nv<<<grid, block>>>(G_dev, cuboids_dev, 
                                        N_cuboids, Nx, Ny, Npart,
                                        scan_deltax, scan_deltay, scan_spacing,
-                                       xi0, eta0, zeta0, verbose);
+                                       xi0, eta0, zeta0, RefMult, verbose);
         cudaDeviceSynchronize();
 
         // Copy G from the GPU to the host
