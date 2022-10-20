@@ -42,8 +42,9 @@ digraph "packages" {
             <TR><TD><B>inversion_tools</B></TD></TR>
             <TR><TD>(Fn) calculate_condition_number()<BR/>(Fn) calculate_covariance_matrix()<BR/>(Fn) calculate_forward_field()</TD></TR>
         </TABLE>>];
+    rankdir=LR;
     mmt_dpinv -> dpinv;
-    dpinv -> {clib,cclib,nlib} [dir=back];
-    mmt_dpinv -> tools;
     mmt_dpinv -> invtools;
+    mmt_dpinv -> tools;
+    dpinv -> {clib,cclib,nlib} [dir=back];
 }
