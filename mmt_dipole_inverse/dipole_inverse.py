@@ -377,11 +377,12 @@ class Dipole(object):
                                   DeprecationWarning)
                 Inverse_G = spl.pinv(self.Forward_G, **method_kwargs)
                 self.Mag = np.matmul(Inverse_G, scan_flatten)  # type: ignore
-                print(SUCC_MSG)
+                if self.verbose: print(SUCC_MSG)
             elif method == 'numpy_pinv':
                 Inverse_G = np.linalg.pinv(self.Forward_G, **method_kwargs)
                 self.Mag = np.matmul(Inverse_G, scan_flatten)
-                print(SUCC_MSG)
+                if self.verbose:
+                    print(SUCC_MSG)
 
             elif method == 'scipy_lapack':
                 # Solve G^t * phi = G^t * G * M
@@ -392,32 +393,33 @@ class Dipole(object):
                 GtG = np.matmul(self.Forward_G.T, self.Forward_G)
                 GtG_shuffle, IPIV, INFO1 = spl.lapack.dgetrf(GtG)
                 if INFO1 == 0:
-                    print('LU decomposition of G * G^t succeeded')
+                    if self.verbose:
+                        print('LU decomposition of G * G^t succeeded')
                     GtScan = np.matmul(self.Forward_G.T, scan_flatten)
                     self.Mag, INFO2 = spl.lapack.dgetrs(GtG_shuffle, IPIV, GtScan)
                     if INFO2 != 0:
                         self.Mag = None
-                        print(f'{INFO2}th argument has an'
-                              'illegal value. self.Mag deleted')
+                        raise RuntimeError(f'{INFO2}th argument has an illegal value. self.Mag deleted')
                     else:
-                        print(SUCC_MSG)
+                        if self.verbose:
+                            print(SUCC_MSG)
                 else:
                     print(f'{INFO1}th argument has an illegal value')
 
             else:
-                print(f'Method {method} is not recognized')
+                raise TypeError(f'Method {method} is not recognized')
 
             if store_inverse_G_matrix:
                 if method == 'scipy_lapack':
-                    raise Exception('LAPACK method does not compute G inverse')
+                    raise TypeError('LAPACK method does not compute G inverse')
                 else:
                     # Warning: Inverse_G might be an unbound variable:
                     self.Inverse_G = Inverse_G
 
         else:
-            print(f'Problem is underdetermined with '
-                  f'{self.Forward_G.shape[0]} knowns and '
-                  f'{self.Forward_G.shape[1]} unknowns')
+            raise RuntimeError(f'Problem is underdetermined with '
+                               f'{self.Forward_G.shape[0]} knowns and '
+                               f'{self.Forward_G.shape[1]} unknowns')
 
         return None
 
