@@ -79,7 +79,8 @@ class Dipole(object):
                  scan_deltax: float,
                  scan_deltay: float,
                  scan_area: float,
-                 scan_height: float
+                 scan_height: float,
+                 verbose: bool = True
                  ):
         """Class to obtain the magnetization from grains modelled as cuboids
 
@@ -109,6 +110,9 @@ class Dipole(object):
             i.e. towards depth, so cuboids must be defined with positive
             z-positions. If `scan_height` is positive, then we have a right
             handed system and cuboid's z-positions must have negative values
+        verbose
+            Print extra information about the functions to populate the matrix,
+            the inversions and other methods. Can be changed at any time.
 
         Attributes
         ----------
@@ -145,9 +149,10 @@ class Dipole(object):
         self.scan_height = scan_height
 
         self.Inverse_G = None
+        self.verbose = verbose
 
     @classmethod
-    def from_json(cls, file_path: Union[Path, str]) -> Dipole:
+    def from_json(cls, file_path: Union[Path, str], verbose: bool = True) -> Dipole:
         """Instantiate the class using scanning surface params from a JSON file
 
         The required JSON keys are::
@@ -176,7 +181,8 @@ class Dipole(object):
                    metadict.get('Scan delta-x'),
                    metadict.get('Scan delta-y'),
                    metadict.get('Scan area'),
-                   metadict.get('Scan height'))
+                   metadict.get('Scan height'),
+                   verbose=verbose)
 
     def read_files(self,
                    scan_data: Union[Path, str, np.ndarray, np.matrix],
@@ -272,7 +278,6 @@ class Dipole(object):
 
     def prepare_matrix(self,
                        Origin: bool = True,
-                       verbose: bool = True,
                        method: _PrepMatOps = 'cython'
                        ):
         """ Allocates/instantiates the Numpy arrays to populate the forward
@@ -283,8 +288,6 @@ class Dipole(object):
         Origin
             If True, use the scan_domain lower left coordinates as the scan grid
             origin. If False, set scan grid origin at (0., 0.)
-        verbose
-            Set to True to print log information when populating the matrix
         method
             Populating the matrix can be done using either `numba` or `cython`
             or (nvidia) `cuda` optimisation.
@@ -303,7 +306,7 @@ class Dipole(object):
                 np.ravel(self.cuboids), self.Ncub,
                 self.Npart, self.Ny, self.Nx,
                 self.scan_spacing[0], self.scan_spacing[1],
-                self.scan_deltax, self.scan_deltay, Origin, int(verbose))
+                self.scan_deltax, self.scan_deltay, Origin, int(self.verbose))
 
         if method == 'cuda':
             if HASCUDA is False:
@@ -315,7 +318,7 @@ class Dipole(object):
                 self.Npart, self.Ny, self.Nx,
                 self.scan_spacing[0], self.scan_spacing[1],
                 self.scan_deltax, self.scan_deltay,
-                Origin, int(verbose))
+                Origin, int(self.verbose))
 
         elif method == 'numba':
             populate_matrix_numba(
@@ -323,7 +326,7 @@ class Dipole(object):
                 self.cuboids, self.Npart, self.Ny, self.Nx,
                 self.scan_spacing[0], self.scan_spacing[1],
                 self.scan_deltax, self.scan_deltay,
-                Origin=Origin, verbose=verbose)
+                Origin=Origin, verbose=self.verbose)
 
     _MethodOps = Literal['scipy_lapack',
                          'scipy_pinv',
@@ -363,9 +366,10 @@ class Dipole(object):
         SUCC_MSG = 'Inversion has been carried out'
         scan_flatten = self.scan_matrix.flatten()
         if self.Forward_G.shape[0] >= self.Forward_G.shape[1]:
-            print(f'Start inversion with {self.Forward_G.shape[0]} '
-                  f'knowns and {self.Forward_G.shape[1]} unknowns')
-            # probably there is a more efficient way to write these options
+            if self.verbose:
+                print(f'Start inversion with {self.Forward_G.shape[0]} '
+                      f'knowns and {self.Forward_G.shape[1]} unknowns')
+            # Probably there is a more efficient way to write these options
             if method == 'scipy_pinv' or 'scipy_pinv2':
                 if method == 'scipy_pinv2':
                     # Not shown in Jupyter somehow: (make a simple print?)
@@ -422,7 +426,6 @@ class Dipole(object):
             scan_data: Path or str or np.ndarray or np.matrix,
             cuboid_data: Path or str or np.ndarray or np.matrix,
             cuboid_scaling_factor: float,
-            verbose: bool = True,
             method_populate: _PrepMatOps = 'cython',
             method_inverse: _MethodOps = 'scipy_pinv',
             **method_inverse_kwargs):
@@ -449,7 +452,7 @@ class Dipole(object):
         """
 
         self.read_files(scan_data, cuboid_data, cuboid_scaling_factor)
-        self.prepare_matrix(method=method_populate, verbose=verbose)
+        self.prepare_matrix(method=method_populate, verbose=self.verbose)
         self.calculate_inverse(method=method_inverse,
                                **method_inverse_kwargs)
 
