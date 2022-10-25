@@ -1,5 +1,5 @@
 # Show only the main class:
-from .dipole_inverse import Dipole
+from .dipole_cuboid_inversion import DipoleCuboidInversion
 from . import cython_lib
 
 from .__about__ import (
@@ -14,7 +14,7 @@ from .__about__ import (
 )
 
 __all__ = [
-    "Dipole",
+    "DipoleCuboidInversion",
     "cython_lib",
     "__title__",
     "__summary__",

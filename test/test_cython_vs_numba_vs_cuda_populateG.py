@@ -1,11 +1,11 @@
 # Test performance of matrix population for three different methods
 #
 import timeit
-from mmt_dipole_inverse.tools import set_max_num_threads
+from mmt_dipole_cuboid_inversion_config import set_max_num_threads
 import numpy as np
 from pathlib import Path
 set_max_num_threads(8)
-import mmt_dipole_inverse as dpinv  # noqa: E402
+import mmt_dipole_cuboid_inversion as dci  # noqa: E402
 
 # Get this script location
 thisloc = Path(__file__).resolve().parent
@@ -24,25 +24,24 @@ QDM_area = 1.44e-12
 sample_height = 80e-6
 scan_height = 6e-6
 
-mag_svd = dpinv.Dipole(
-    QDM_domain, QDM_spacing, QDM_deltax,
-    QDM_deltay, QDM_area, sample_height,
-    scan_height)
+mag_svd = dci.DipoleCuboidInversion(
+    QDM_domain, QDM_spacing, QDM_deltax, QDM_deltay, QDM_area, scan_height,
+    verbose=True)
 
 mag_svd.read_files(QDMfile, cuboidfile, 1e-6)
 
 results = {}
 
 t_cython_8 = timeit.timeit(
-        "mag_svd.prepare_matrix(method='cython', verbose=False)",
+        "mag_svd.prepare_matrix(method='cython')",
         globals=globals(), number=10)
 
 t_numba = timeit.timeit(
-        "mag_svd.prepare_matrix(method='numba', verbose=False)",
+        "mag_svd.prepare_matrix(method='numba')",
         globals=globals(), number=10)
 
 t_cuda = timeit.timeit(
-        "mag_svd.prepare_matrix(method='cuda', verbose=False)",
+        "mag_svd.prepare_matrix(method='cuda')",
         globals=globals(), number=10)
 
 results['cython_8_threads'] = t_cython_8

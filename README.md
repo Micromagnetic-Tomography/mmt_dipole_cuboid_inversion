@@ -1,29 +1,31 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-# MMT Numerical Libraries: Dipole Inverse
+# MMT Numerical Libraries: Dipole Cuboid Inversion
 
-Python library for the calculation of dipole magnetizations from magnetic grain
-sources using both the position of grains and magnetic surface data from the
+Python library for the calculation of magnetizations from magnetic grain
+sources modelled as uniformly magnetized, i.e. dipole-like, cuboids. The method
+requires both the position of grains and magnetic surface data from the
 Micromagnetic Tomography project. This is achieved by:
 
 - Modelling the grains as aggregation of cuboids. This data is input into this
-  library's main class called `Dipole`.
+  library's main class called `DipoleCuboidInversion`.
 
 - Creating a forward matrix, which is also known as Green's matrix, that is
   obtained from the analytical formulation of the demagnetizing field of the
   cuboids. This matrix is multiplied by the degrees of freedom of the system
   which are the magnetizations of all the grains in the sample. The
   multiplication results into the magnetic field signal imprinted into the scan
-  surface. The `Dipole` class accepts the scan surface data as a text input
-  file or Numpy matrix and has methods to calculate the Green's matrix.
+  surface. The `DipoleCuboidInversion` class accepts the scan surface data as
+  a text input file or Numpy matrix and has methods to calculate the Green's
+  matrix.
 
 - Numerically inverting the scan surface data into the grains to obtain their
   individual magnetizations. The inversion is obtained by calculating the
   pseudo-inverse of the Green's matrix using Numpy or Scipy.
 
-The `mmt_dipole_inverse` library is optimized to populate the Green's matrix
-using either: Numba (compiled function), C parallelized with OpenMP
+The `mmt_dipole_cuboid_inversion` library is optimized to populate the Green's
+matrix using either: Numba (compiled function), C parallelized with OpenMP
 (parallelization in the number of particles) or NVidia CUDA (high performance
 parallelization via the number of sensors in the scan surface).
 
@@ -32,7 +34,7 @@ parallelization via the number of sensors in the scan surface).
 Via PyPI and `pip` (note PyPI names use `-` instead of `_`)
 
 ```console
-pip install mmt-dipole-inverse
+pip install mmt-dipole-cuboid-inversion
 ```
 
 Or you can use Poetry (recommended for development and CUDA, see below)
@@ -62,8 +64,8 @@ unless you are already in a `virtualenv`, for example, creating one via
 `poetry run`:
 
 ```
-git clone https://github.com/Micromagnetic-Tomography/mmt_dipole_inverse
-cd mmt_dipole_inverse
+git clone https://github.com/Micromagnetic-Tomography/mmt_dipole_cuboid_inversion
+cd mmt_dipole_cuboid_inversion
 poetry install
 poetry run python test/generate_single_dipole.py
 ```
@@ -91,9 +93,9 @@ robust.
 You can call the class by doing:
 
 ```
-import dipole_inverse as dpinv
+import mmt_dipole_cuboid_inversion as dci
 
-data = dpinv.Dipole(...)
+data = dci.DipoleCuboidInversion(...)
 ...
 ```
 
@@ -106,9 +108,9 @@ If you find this library useful please cite us (you might need LaTeX's
 
     @Misc{Out2023,
       author       = {Out, Frenk and Cortés-Ortuño, David and Kosters, Martha and Fabian, Karl and de Groot, Lennart V.},
-      title        = {{MMT Numerical Libraries: Dipole Inversion}},
+      title        = {{MMT Numerical Libraries: Dipole Cuboid Inversion}},
       publisher    = {Zenodo},
-      note         = {Github: \url{https://github.com/Micromagnetic-Tomography/mmt_dipole_inversion}},
+      note         = {Github: \url{https://github.com/Micromagnetic-Tomography/mmt_dipole_cuboid_inversion}},
       year         = {2022},
       doi          = {10.5281/zenodo.XXXXX},
       url          = {https://doi.org/10.5281/zenodo.XXXXX},

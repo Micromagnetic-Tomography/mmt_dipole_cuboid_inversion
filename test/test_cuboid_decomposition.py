@@ -1,4 +1,4 @@
-from mmt_dipole_inverse.tools import CuboidDecomposition
+from mmt_dipole_cuboid_inversion.tools import CuboidDecomposition
 from pathlib import Path
 import numpy as np
 

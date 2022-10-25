@@ -1,17 +1,17 @@
 import numpy as np
-from . import Dipole
+from .dipole_cuboid_inversion import DipoleCuboidInversion
 from typing import Literal   # Working with Python >3.8
 from typing import Union     # Working with Python >3.8
 from typing import Tuple     # Working with Python >3.8
 from typing import Optional  # Working with Python >3.8
 
 
-def calculate_covariance_matrix(DipoleClassInstance: Dipole,
+def calculate_covariance_matrix(DipoleClassInstance: DipoleCuboidInversion,
                                 sigma: float,
                                 norm: bool = True,
-                                std_dev_file: str = None,
-                                norm_covar_file: str = None,
-                                resol_matrix_file: str = None
+                                std_dev_file: Optional[str] = None,
+                                norm_covar_file: Optional[str] = None,
+                                resol_matrix_file: Optional[str] = None
                                 ) -> Optional[Tuple[np.ndarray,
                                                     np.ndarray,
                                                     np.ndarray]]:
@@ -52,7 +52,7 @@ def calculate_covariance_matrix(DipoleClassInstance: Dipole,
 
     standard_deviation = np.sqrt(np.diag(covar)).reshape(self.Npart, 3)
 
-    if norm == True:
+    if norm:
         normcovar = covar.copy()
         for row in range(covar.shape[0]):
             for column in range(covar.shape[1]):
@@ -76,7 +76,7 @@ def calculate_covariance_matrix(DipoleClassInstance: Dipole,
 _normOps = Literal[None, 1, -1, 2, -2, 'inf', '-inf', 'fro']
 
 
-def calculate_condition_number(DipoleClassInstance: Dipole,
+def calculate_condition_number(DipoleClassInstance: DipoleCuboidInversion,
                                matrix_norm: _normOps = None
                                ) -> Union[None, float]:
     r"""
@@ -111,7 +111,7 @@ def calculate_condition_number(DipoleClassInstance: Dipole,
     return cond_number
 
 
-def calculate_forward_field(DipoleClassInstance: Dipole,
+def calculate_forward_field(DipoleClassInstance: DipoleCuboidInversion,
                             sigma: Union[None, float] = None,
                             forward_field_file: Optional[str] = None,
                             ) -> np.ndarray:

@@ -1,9 +1,9 @@
-from mmt_dipole_inverse.tools import set_max_num_threads
+from mmt_dipole_cuboid_inversion_config import set_max_num_threads
 import numpy as np
 from pathlib import Path
 import copy
 set_max_num_threads(8)
-import mmt_dipole_inverse as dpinv  # noqa: E402
+import mmt_dipole_cuboid_inversion as dci  # noqa: E402
 
 # Get this script location
 thisloc = Path(__file__).resolve().parent
@@ -24,10 +24,9 @@ sample_height = 80e-6
 scan_height = 6e-6
 
 print('Setting up class')
-inverse_model = dpinv.Dipole(
-    QDM_domain, QDM_spacing, QDM_deltax,
-    QDM_deltay, QDM_area, sample_height,
-    scan_height)
+inverse_model = dci.DipoleCuboidInversion(
+    QDM_domain, QDM_spacing, QDM_deltax, QDM_deltay, QDM_area,
+    scan_height, verbose=True)
 
 inverse_model.read_files(QDMfile, cuboidfile, 1e-6)
 

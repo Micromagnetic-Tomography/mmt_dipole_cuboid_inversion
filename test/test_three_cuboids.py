@@ -1,11 +1,11 @@
-from mmt_dipole_inverse_config import set_max_num_threads
+from mmt_dipole_cuboid_inversion_config import set_max_num_threads
 set_max_num_threads(4)
 import numpy as np
 from pathlib import Path
 # import time
 # import matplotlib.pyplot as plt
-import mmt_dipole_inverse as dpinv  # noqa: E402
-# import mmt_dipole_inverse.tools as dpinvt  # noqa: E402
+import mmt_dipole_cuboid_inversion as dci  # noqa: E402
+# import mmt_dipole_inverse.tools as dcit  # noqa: E402
 try:
     # the cuda populate_matrix function
     from mmt_dipole_inverse.cython_cuda_lib import pop_matrix_cudalib
@@ -42,7 +42,7 @@ def test_three_cuboids():
     scan_area = 2500e-18
     scan_height = -500e-9
 
-    dip_inversion = dpinv.Dipole(scan_domain, scan_spacing, scan_deltax,
+    dip_inversion = dci.DipoleCuboidInversion(scan_domain, scan_spacing, scan_deltax,
                                  scan_deltay, scan_area, scan_height)
 
     # Cuboid file units in nm
@@ -75,23 +75,23 @@ def test_three_cuboids():
     # assert abs(dip_inversion.Mag[1] - Ms) / Ms < 1e-2
     dip_inversion.Inverse_G
 
-    # dpinvt.plot.set_grain_geometries(dip_inversion)
+    # dcit.plot.set_grain_geometries(dip_inversion)
     #
     # f, ax = plt.subplots()
-    # dpinvt.plot.plot_grain_boundaries(dip_inversion, ax)
-    # im = dpinvt.plot.plot_scan_field(dip_inversion, ax,
+    # dcit.plot.plot_grain_boundaries(dip_inversion, ax)
+    # im = dcit.plot.plot_scan_field(dip_inversion, ax,
     #                                  imshow_args=dict(cmap='RdBu'))
     # ax.set_title('Forward field')
     # plt.colorbar(im)
     # plt.show()
 
     # f, ax = plt.subplots()
-    # dpinvt.plot.plot_grain_boundaries(dip_inversion, ax)
-    # # im = dpinvt.plot.plot_scan_field(dip_inversion, ax,
+    # dcit.plot.plot_grain_boundaries(dip_inversion, ax)
+    # # im = dcit.plot.plot_scan_field(dip_inversion, ax,
     # #                                  imshow_args=dict(cmap='RdBu'))
-    # im = dpinvt.plot.plot_inversion_field(dip_inversion, ax,
+    # im = dcit.plot.plot_inversion_field(dip_inversion, ax,
     #                                       imshow_args=dict(cmap='RdBu'))
-    # # im = dpinvt.plot.plot_residual(dip_inversion, ax,
+    # # im = dcit.plot.plot_residual(dip_inversion, ax,
     # #                                imshow_args=dict(cmap='RdBu'))
 
     # plt.colorbar(im)

@@ -3,21 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Dipole Inverse - Cuboid model numerical inversion
-=================================================
+MMT Dipole Cuboid Inversion - Cuboid model numerical inversion
+==============================================================
 
 .. image:: ./_static/area1_grains_scan_sample.jpg
 
 |
 
-This is the documentation for the `dipole_inverse` library. This Python module
-performs numerical inversions from magnetometry or microscopy scan data into
-grains modeled as cuboids. Grain geometries and locations are obtained from
-micro or nano X-ray computed tomography. The main class of this library is the
-`Dipole` class that accepts the measurement data and has the necessary methods
-to obtain inverted magnetizations.
+This is the documentation for the `dipole_cuboid_inversion` library. This
+Python module performs numerical inversions from magnetometry or microscopy
+scan data into grains modelled as cuboids. Grain geometries and locations are
+obtained from micro or nano X-ray computed tomography. The main class of this
+library is the `Dipole` class that accepts the measurement data and has the
+necessary methods to obtain inverted magnetizations.
 
-.. autoclass:: mmt_dipole_inverse.Dipole
+.. autoclass:: mmt_dipole_cuboid_inversion.DipoleCuboidInversion
    :noindex:
    
 The `scan_data` and `cuboid_data` parameters are passed as text files. The data

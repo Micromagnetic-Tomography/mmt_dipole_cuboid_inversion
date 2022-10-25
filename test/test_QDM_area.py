@@ -1,8 +1,8 @@
-from mmt_dipole_inverse.tools import set_max_num_threads
+from mmt_dipole_cuboid_inversion.tools import set_max_num_threads
 import numpy as np
 from pathlib import Path
 set_max_num_threads(6)
-import mmt_dipole_inverse as dpinv  # noqa: E402
+import mmt_dipole_cuboid_inversion as dci  # noqa: E402
 
 data_path = Path('../chest/tutorial_qdm_data/')
 
@@ -27,10 +27,9 @@ scan_height = 6e-6
 # file to write magnetization grains to
 Magfile = data_path / "grain_mag.txt"
 
-mag_svd = dpinv.Dipole(
-    QDM_domain, QDM_spacing, QDM_deltax,
-    QDM_deltay, QDM_area, sample_height,
-    scan_height)
+mag_svd = dci.DipoleCuboidInversion(
+    QDM_domain, QDM_spacing, QDM_deltax, QDM_deltay, QDM_area, sample_height,
+    verbose=True)
 
 mag_svd.obtain_magnetization(QDMfile, cuboidfile, 1e-6,
                              method_populate='cython', verbose=False)

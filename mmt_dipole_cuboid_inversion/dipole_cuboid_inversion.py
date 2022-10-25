@@ -71,7 +71,7 @@ def loadtxt_iter(txtfile, delimiter=None, skiprows=0, dtype=np.float64):
     return data
 
 
-class Dipole(object):
+class DipoleCuboidInversion(object):
 
     def __init__(self,
                  scan_domain: np.ndarray,
@@ -87,7 +87,8 @@ class Dipole(object):
         The magnetization is computed via numerical inversion from a surface
         with magnetic field scan data (from microscopy, such as Quantum Diamond
         Microscopy), and both grain locations and geometries from tomographic
-        data.
+        data. Grains are modelled as aggregations of cuboids with dipole order
+        magnetic moments.
 
         Parameters
         ----------
@@ -148,11 +149,12 @@ class Dipole(object):
         self.scan_area = scan_area
         self.scan_height = scan_height
 
-        self.Inverse_G = None
+        self.Inverse_G = np.empty([])
+        self.Mag = np.empty([])
         self.verbose = verbose
 
     @classmethod
-    def from_json(cls, file_path: Union[Path, str], verbose: bool = True) -> Dipole:
+    def from_json(cls, file_path: Union[Path, str], verbose: bool = True) -> DipoleCuboidInversion:
         """Instantiate the class using scanning surface params from a JSON file
 
         The required JSON keys are::
@@ -398,7 +400,7 @@ class Dipole(object):
                     GtScan = np.matmul(self.Forward_G.T, scan_flatten)
                     self.Mag, INFO2 = spl.lapack.dgetrs(GtG_shuffle, IPIV, GtScan)
                     if INFO2 != 0:
-                        self.Mag = None
+                        self.Mag = np.empty([])
                         raise RuntimeError(f'{INFO2}th argument has an illegal value. self.Mag deleted')
                     else:
                         if self.verbose:

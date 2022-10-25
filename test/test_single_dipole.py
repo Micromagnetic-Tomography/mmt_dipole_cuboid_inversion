@@ -1,13 +1,13 @@
-from mmt_dipole_inverse_config import set_max_num_threads
+from mmt_dipole_cuboid_inversion_config import set_max_num_threads
 set_max_num_threads(4)
 import numpy as np
 from pathlib import Path
 import time
 import matplotlib.pyplot as plt
-import mmt_dipole_inverse as dpinv  # noqa: E402
+import mmt_dipole_cuboid_inversion as dci  # noqa: E402
 try:
     # the cuda populate_matrix function
-    from mmt_dipole_inverse.cython_cuda_lib import pop_matrix_cudalib
+    from mmt_dipole_cuboid_inversion.cython_cuda_lib import pop_matrix_cudalib
     HASCUDA = True
 except ImportError:
     HASCUDA = False
@@ -36,9 +36,9 @@ def test_dipole_class():
     # distance between QDM and top sample
     scan_height = 2e-6
 
-    dip_inversion = dpinv.Dipole(
-        QDM_domain, QDM_spacing,
-        QDM_deltax, QDM_deltay, QDM_area, scan_height)
+    dip_inversion = dci.DipoleCuboidInversion(
+        QDM_domain, QDM_spacing, QDM_deltax, QDM_deltay, QDM_area,
+        scan_height, verbose=True)
 
     dip_inversion.read_files(QDMfile, cuboidfile, cuboid_scaling_factor=1e-6)
     # Since scan height is positive, z-pos of cuboids must be negative:
@@ -48,11 +48,11 @@ def test_dipole_class():
     assert(dip_inversion.scan_matrix.shape[1]) == 21
 
     print('Testing Numba pop matrix')
-    dip_inversion.prepare_matrix(method='numba', verbose=True)
+    dip_inversion.prepare_matrix(method='numba')
     FG_copy = np.copy(dip_inversion.Forward_G)
 
     print('\nComparing Cython pop matrix to Numba code')
-    dip_inversion.prepare_matrix(method='cython', verbose=False)
+    dip_inversion.prepare_matrix(method='cython')
     for j, i in [(5, 1), (100, 0), (195, 2), (368, 1)]:
         assert abs(FG_copy[j, i] - dip_inversion.Forward_G[j, i]) < 1e-8
     # print(dip_inversion.Forward_G[j, i])
@@ -65,7 +65,7 @@ def test_dipole_class():
 
     if HASCUDA:
         print('\nComparing NVIDIA cuda pop matrix to Numba code')
-        dip_inversion.prepare_matrix(method='cuda', verbose=False)
+        dip_inversion.prepare_matrix(method='cuda')
         for j, i in [(5, 1), (100, 0), (195, 2), (368, 1)]:
             assert abs(FG_copy[j, i] - dip_inversion.Forward_G[j, i]) < 1e-8
         print(dip_inversion.Forward_G[j, i])
@@ -93,8 +93,8 @@ def test_coord_system_single_dipole():
     # distance between QDM and top sample
     scan_height = 2e-6
 
-    dip_inversion = dpinv.Dipole(QDM_domain, QDM_spacing, QDM_deltax,
-                                 QDM_deltay, QDM_area, scan_height)
+    dip_inversion = dci.Dipole(QDM_domain, QDM_spacing, QDM_deltax,
+                               QDM_deltay, QDM_area, scan_height)
 
     dip_inversion.read_files(QDMfile, cuboid_data, cuboid_scaling_factor=1e-6)
 
