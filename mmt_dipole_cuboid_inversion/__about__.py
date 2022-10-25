@@ -11,14 +11,14 @@ __all__ = [
     "__copyright__",
 ]
 
-__title__ = "mmt_dipole_inverse"
+__title__ = "mmt_dipole_cuboid_inversion"
 __summary__ = (
     "Library to compute magnetizations from numerical inversions of surface "
     "scan data into grain sources modelled as cuboid aggregations"
 )
 __uri__ = "https://github.com/Micromagnetic-Tomography/mmt_dipole_inverse"
 
-__version__ = importlib.metadata.version("mmt_dipole_inverse")
+__version__ = importlib.metadata.version("mmt_dipole_cuboid_inversion")
 
 __author__ = "F. Out, D. Cortés-Ortuño, M. Kosters, K. Fabian, L. V. de Groot"
 __email__ = "f.out@uu.nl"
