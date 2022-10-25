@@ -93,13 +93,14 @@ def test_coord_system_single_dipole():
     # distance between QDM and top sample
     scan_height = 2e-6
 
-    dip_inversion = dci.Dipole(QDM_domain, QDM_spacing, QDM_deltax,
-                               QDM_deltay, QDM_area, scan_height)
+    dip_inversion = dci.DipoleCuboidInversion(
+        QDM_domain, QDM_spacing, QDM_deltax, QDM_deltay, QDM_area,
+        scan_height, verbose=True)
 
     dip_inversion.read_files(QDMfile, cuboid_data, cuboid_scaling_factor=1e-6)
 
     print('Testing Numba pop matrix')
-    dip_inversion.prepare_matrix(method='cython', verbose=True)
+    dip_inversion.prepare_matrix(method='cython')
     dip_inversion.calculate_inverse(method='scipy_pinv', rtol=1e-25)
     # Save the mag from the default right handed system of coords:
     Mag_RHS = np.copy(dip_inversion.Mag)
@@ -112,7 +113,7 @@ def test_coord_system_single_dipole():
     # Now do inversion using LHS with positive z downwards (towards grain depth)
     dip_inversion.cuboids[:, 2] *= -1.
     dip_inversion.scan_height = -scan_height
-    dip_inversion.prepare_matrix(method='cython', verbose=True)
+    dip_inversion.prepare_matrix(method='cython')
     dip_inversion.calculate_inverse(method='scipy_pinv', rtol=1e-25)
     Mag_LHS = np.copy(dip_inversion.Mag)
 
