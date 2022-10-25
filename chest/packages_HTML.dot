@@ -2,45 +2,45 @@ digraph "packages" {
     node [shape=folder fontname=FiraMono]
     mmt_dpinv [style=filled fillcolor=coral label=<
         <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
-            <TR><TD><B>mmt_dipole_inverse</B></TD></TR>
+            <TR><TD><B>mmt_dipole_cuboid_inversion</B></TD></TR>
         </TABLE>>];
     dpinv [label=<
         <TABLE BORDER="0" CELLBORDER="0" ROWS="*" CELLSPACING="1">
-            <TR><TD><B>dipole_inverse</B></TD></TR>
-            <TR><TD>(Class) Dipole</TD></TR>
+            <TR><TD><B>dipole_cuboid_inversion</B></TD></TR>
+            <TR><TD>(Class) DipoleCuboidInversion</TD></TR>
         </TABLE>>];
     clib [label=<
         <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
             <TR><TD><B>cython_lib</B></TD></TR>
-            <TR><TD>(Fn) populate_matrix_cython()</TD></TR>
+            <TR><TD>(Fn) populate_matrix_cython</TD></TR>
         </TABLE>>];
     cclib [label=<
         <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
             <TR><TD><B>cython_cuda_lib</B></TD></TR>
-            <TR><TD>(Fn) populate_matrix_cython()</TD></TR>
+            <TR><TD>(Fn) populate_matrix_cython</TD></TR>
         </TABLE>>];
     nlib [label=<
         <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
             <TR><TD><B>numba_lib</B></TD></TR>
-            <TR><TD>(Fn) populate_matrix_numba()</TD></TR>
+            <TR><TD>(Fn) populate_matrix_numba</TD></TR>
         </TABLE>>];
     tools [label=<
         <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
             <TR><TD><B>tools</B></TD></TR>
             <TR>
               <TD>cuboid_decompose</TD>
-              <TD>(Fn) CuboidDecomposition()</TD>
+              <TD>(Fn) CuboidDecomposition</TD>
             </TR>
             <TR><TD>(ext) grain_geometry_tools</TD></TR>
             <TR>
               <TD>plot</TD>
-              <TD>(Fn) set_grain_geometries()<BR/>(Fn) plotCubeAt()<BR/>(Fn) plot_grain_boundaries()<BR/>(Fn) plot_inversion_field()<BR/>...</TD>
+              <TD>(Fn) set_grain_geometries<BR/>(Fn) plotCubeAt<BR/>(Fn) plot_grain_boundaries<BR/>(Fn) plot_inversion_field<BR/>...</TD>
             </TR>
         </TABLE>>];
     invtools [label=<
         <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
             <TR><TD><B>inversion_tools</B></TD></TR>
-            <TR><TD>(Fn) calculate_condition_number()<BR/>(Fn) calculate_covariance_matrix()<BR/>(Fn) calculate_forward_field()</TD></TR>
+            <TR><TD>(Fn) calculate_condition_number<BR/>(Fn) calculate_covariance_matrix<BR/>(Fn) calculate_forward_field</TD></TR>
         </TABLE>>];
     rankdir=LR;
     mmt_dpinv -> dpinv;
