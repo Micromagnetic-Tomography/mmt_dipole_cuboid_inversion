@@ -1,4 +1,4 @@
 [submodule "mmt_dipole_inverse/tools/grain_geometry_tools"]
-	path = mmt_dipole_inverse/tools/grain_geometry_tools
+	path = mmt_dipole_cuboid_inversion/tools/grain_geometry_tools
 	url = git@github.com:Micromagnetic-Tomography/grain_geometry_tools.git
     ignore = dirty
