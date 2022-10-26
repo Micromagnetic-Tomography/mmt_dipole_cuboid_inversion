@@ -109,9 +109,9 @@ void populate_matrix_C(double * G,
                         for (double s3 = -1; s3 < 1.1;  s3 += 2) {
                             for (double s4 = -1; s4 < 1.1;  s4 += 2) {
                                 for (double s5 = -1; s5 < 1.1;  s5 += 2) {
-                                    x = RefMult * (dr_cuboid[0] + s1 * cuboid_size[0] - s4 * scan_deltax);
-                                    y = RefMult * (dr_cuboid[1] + s2 * cuboid_size[1] - s5 * scan_deltay);
-                                    z = RefMult * (dr_cuboid[2] + s3 * cuboid_size[2]);
+                                    x = RefMult * (dr_cuboid[0] - s1 * cuboid_size[0] + s4 * scan_deltax);
+                                    y = RefMult * (dr_cuboid[1] - s2 * cuboid_size[1] + s5 * scan_deltay);
+                                    z = RefMult * (dr_cuboid[2] - s3 * cuboid_size[2]);
                                     sign = s1 * s2 * s3 * s4 * s5;
                                     x2 = x * x; y2 = y * y; z2 = z * z;
                                     r2 = x2 + y2 + z2;
