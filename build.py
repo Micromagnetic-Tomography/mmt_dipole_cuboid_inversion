@@ -121,9 +121,9 @@ else:
 link_args = ['-fopenmp']
 
 extensions = [
-    Extension("mmt_dipole_inverse.cython_lib.pop_matrix_lib",
-              ["mmt_dipole_inverse/cython_lib/pop_matrix_lib.pyx",
-               "mmt_dipole_inverse/cython_lib/pop_matrix_C_lib.c"],
+    Extension("mmt_dipole_cuboid_inversion.cython_lib.pop_matrix_lib",
+              ["mmt_dipole_cuboid_inversion/cython_lib/pop_matrix_lib.pyx",
+               "mmt_dipole_cuboid_inversion/cython_lib/pop_matrix_C_lib.c"],
               extra_compile_args=com_args,
               extra_link_args=link_args,
               include_dirs=[numpy.get_include()]
@@ -144,9 +144,9 @@ if CUDA:
                         '-c', '--compiler-options', "'-fPIC'"]
 
     extensions.append(
-        Extension("dipole_inverse.cython_cuda_lib.pop_matrix_cudalib",
-                  sources=["dipole_inverse/cython_cuda_lib/pop_matrix_cudalib.pyx",
-                           "dipole_inverse/cython_cuda_lib/pop_matrix_cuda_lib.cu"],
+        Extension("dipole_cuboid_inversion.cython_cuda_lib.pop_matrix_cudalib",
+                  sources=["dipole_cuboid_inversion/cython_cuda_lib/pop_matrix_cudalib.pyx",
+                           "dipole_cuboid_inversion/cython_cuda_lib/pop_matrix_cuda_lib.cu"],
                   # library_dirs=[CUDA['lib64']],
                   libraries=['cudart'],
                   language='c++',
