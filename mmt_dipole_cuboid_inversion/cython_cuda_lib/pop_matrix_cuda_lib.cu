@@ -82,7 +82,7 @@ __global__ void pop_matrix_nv(double * G, double * cuboids,
 
                     for (int k = 0; k < 3; k++) {
                         cuboid_center[k] = cuboids[7 * i_cuboid + k];
-                        dr_cuboid[k] = cuboid_center[k] - sensor_pos[k];
+                        dr_cuboid[k] = sensor_pos[k] - cuboid_center[k];
                         cuboid_size[k] = cuboids[7 * i_cuboid + (k + 3)];
                     }
                     // Cuboid sizes:
