@@ -74,12 +74,13 @@ def loadtxt_iter(txtfile, delimiter=None, skiprows=0, dtype=np.float64):
 class DipoleCuboidInversion(object):
 
     def __init__(self,
-                 scan_domain: np.ndarray,
-                 scan_spacing: float | Tuple[float, float],
-                 scan_deltax: float,
-                 scan_deltay: float,
-                 scan_area: float,
-                 scan_height: float,
+                 scan_domain: Optional[np.ndarray] = None,
+                 sensor_center_domain: Optional[np.ndarray] = None,
+                 scan_spacing: float | Tuple[float, float] = 1e-6,
+                 scan_deltax: float = 0.5e-6,
+                 scan_deltay: float = 0.5e-6,
+                 scan_area: float = 1e-12,
+                 scan_height: float = 1e-6,
                  verbose: bool = True
                  ):
         """Class to obtain the magnetization from grains modelled as cuboids
@@ -90,11 +91,19 @@ class DipoleCuboidInversion(object):
         data. Grains are modelled as aggregations of cuboids with dipole order
         magnetic moments.
 
+        The scan domain coordinates are computed when calling the `read_files`
+        method.
+
         Parameters
         ----------
         scan_domain
-            (2x2 numpy matrix) : Size (metres) of the scan domain as
-             `np.array([[x1, y1], [x2, y2]])`
+            (2x2 numpy matrix) : Coordinates, in meters, of the lower left
+            and upper right corners of the scanning surface domain as
+            `np.array([[x1, y1], [x2, y2]])`
+        sensor_center_domain
+            (2x2 numpy matrix) : Coordinates, in meters, of the corners of the
+            lower left and upper right sensors, of the scanning surface as
+            `np.array([[x_center0, y_center0], [x_center1, y_center1]])`
         scan_spacing
             Distance between two adjacent scanning points in metres. Can be
             passed as a float, if the spacing is the same in x and y, or as a tuple
@@ -139,7 +148,10 @@ class DipoleCuboidInversion(object):
 
         """
 
-        self.scan_domain = scan_domain
+        if scan_domain is None:
+            self.scan_domain = np.zeros((2, 2))
+        if sensor_center_domain is None:
+            self.sensor_center_domain = np.zeros((2, 2))
         if isinstance(scan_spacing, Tuple):
             self.scan_spacing = scan_spacing
         else:
@@ -159,10 +171,10 @@ class DipoleCuboidInversion(object):
 
         The required JSON keys are::
 
-            'Scan domain LL-x'
-            'Scan domain LL-y'
-            'Scan domain UR-x'
-            'Scan domain UR-y'
+            'Scan domain LL-x-y'
+            'Scan domain UR-x-y'
+            'Sensor center domain LL-x-y'
+            'Sensor center domain UR-x-y'
             'Scan spacing'
             'Scan delta-x'
             'Scan delta-y'
@@ -173,12 +185,18 @@ class DipoleCuboidInversion(object):
         with open(file_path, 'r') as f:
             metadict = json.load(f)
 
-        scan_domain = np.array([[metadict.get('Scan domain LL-x'),
-                                 metadict.get('Scan domain LL-y')],
-                                [metadict.get('Scan domain UR-x'),
-                                 metadict.get('Scan domain UR-y')]])
+        scan_domain = np.array([[metadict.get('Scan domain LL-x-y')[0],
+                                 metadict.get('Scan domain LL-x-y')[1]],
+                                [metadict.get('Scan domain UR-x-y')[0],
+                                 metadict.get('Scan domain UR-x-y')[1]]])
+
+        sensor_domain = np.array([[metadict.get('Sensor center domain LL-x-y')[0],
+                                   metadict.get('Sensor center domain LL-x-y')[1]],
+                                  [metadict.get('Sensor center domain UR-x-y')[0],
+                                   metadict.get('Sensor center domain UR-x-y')[1]]])
 
         return cls(scan_domain,
+                   sensor_domain,
                    metadict.get('Scan spacing'),
                    metadict.get('Scan delta-x'),
                    metadict.get('Scan delta-y'),
