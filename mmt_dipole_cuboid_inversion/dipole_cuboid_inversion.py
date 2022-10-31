@@ -511,6 +511,7 @@ class DipoleCuboidInversion(object):
             scan_data: Path | str | npt.NDArray[np.float64],
             cuboid_data: Path | str | npt.NDArray[np.float64],
             cuboid_scaling_factor: float,
+            method_scan_domain: _SetScanDomainOps = 'sensor_center_domain',
             method_populate: _PrepMatOps = 'cython',
             method_inverse: _MethodOps = 'scipy_pinv',
             **method_inverse_kwargs):
@@ -522,24 +523,26 @@ class DipoleCuboidInversion(object):
         Parameters
         ----------
         scan_data
-            Matrix file or `np.ndarray` (Nx columns, Ny rows) containing the
+            Matrix file or `np.ndarray` `(Nx columns, Ny rows)` containing the
             scan data in T
         cuboid_data
-            File or np.ndarray (x, y, z, dx, dy, dz, index) containing location
+            File or np.ndarray `(x, y, z, dx, dy, dz, index)` containing location
             and size grains in micrometers
         cuboid_scaling_factor
             Scaling factor for the cuboid positions and lengths
+        method_scan_domain
+            Method to set the scan domain. See: `set_scan_domain`
         method_populate
-            Method to populate the forward matrix
+            Method to populate the forward matrix. See: `populate_matrix`
         method_inverse
             Method to calculate the numerical inversion. See the docstring of
-            `self.calculate_inverse` for details about the method parameters
+            `calculate_inverse` for details about the method parameters
         """
 
         self.read_files(scan_data, cuboid_data, cuboid_scaling_factor)
-        self.prepare_matrix(method=method_populate, verbose=self.verbose)
-        self.calculate_inverse(method=method_inverse,
-                               **method_inverse_kwargs)
+        self.set_scan_domain(gen_sd_mesh_from=method_scan_domain)
+        self.prepare_matrix(method=method_populate)
+        self.calculate_inverse(method=method_inverse, **method_inverse_kwargs)
 
     def save_results(self,
                      Magfile: Path or str,
