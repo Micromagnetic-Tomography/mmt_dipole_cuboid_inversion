@@ -15,7 +15,7 @@ cuboidfile = data_path / 'class_cuboid_result2.txt'
 magn_file = data_path / 'grain_mag.txt'
 
 # size of QDM domain
-QDM_domain = np.array([[300, 1250], [450, 1400]]) * 1e-6
+QDM_sensor_domain = np.array([[300, 1250], [450, 1400]]) * 1e-6
 QDM_spacing = 1.2e-6
 QDM_deltax = 0.6e-6
 QDM_deltay = 0.6e-6
@@ -25,24 +25,26 @@ scan_height = 6e-6
 
 print('Setting up class')
 inverse_model = dci.DipoleCuboidInversion(
-    QDM_domain, QDM_spacing, QDM_deltax, QDM_deltay, QDM_area,
+    None, QDM_sensor_domain, QDM_spacing, QDM_deltax, QDM_deltay, QDM_area,
     scan_height, verbose=True)
 
 inverse_model.read_files(QDMfile, cuboidfile, 1e-6)
+inverse_model.set_scan_domain()
+inverse_model.verbose = False
 
 # cython
 print('Prepare matrix using cython')
-inverse_model.prepare_matrix(method='cython', verbose=False)
+inverse_model.prepare_matrix(method='cython')
 inverse_model.calculate_inverse()
 cython = copy.deepcopy(inverse_model.Mag).reshape(-1, 3)
 # cuda
 print('Prepare matrix using cuda')
-inverse_model.prepare_matrix(method='cuda', verbose=False)
+inverse_model.prepare_matrix(method='cuda')
 inverse_model.calculate_inverse()
 cuda = copy.deepcopy(inverse_model.Mag).reshape(-1, 3)
 # numba
 print('Prepare matrix using numba')
-inverse_model.prepare_matrix(method='numba', verbose=False)
+inverse_model.prepare_matrix(method='numba')
 inverse_model.calculate_inverse()
 numba = copy.deepcopy(inverse_model.Mag).reshape(-1, 3)
 

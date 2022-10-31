@@ -32,25 +32,27 @@ def test_three_cuboids():
     ScanMatrix = dataloc / 'bz_cuboids_three-particles.npy'
     cuboidfile = dataloc / 'cuboids.txt'
     cuboid_data = np.loadtxt(cuboidfile, skiprows=0)
-    # cuboid_data[:, 2] *= -1
+    cuboid_data[:, 2] *= -1
+    # print(cuboid_data)
 
     # Scan surface properties (from the semi-analytical model)
-    scan_domain = np.array([[-2.5, -2.5], [2.5, 2.5]]) * 1e-6
+    sensor_domain = np.array([[-2.5, -2.5], [2.5, 2.5]]) * 1e-6
     scan_spacing = 50e-9
     scan_deltax = 25e-9
     scan_deltay = 25e-9
     scan_area = 2500e-18
-    scan_height = -500e-9
+    scan_height = 500e-9
 
-    dip_inversion = dci.DipoleCuboidInversion(scan_domain, scan_spacing, scan_deltax,
-                                 scan_deltay, scan_area, scan_height)
+    dip_inversion = dci.DipoleCuboidInversion(
+        None, sensor_domain, scan_spacing, scan_deltax, scan_deltay, scan_area, scan_height, verbose=True)
 
     # Cuboid file units in nm
-    dip_inversion.read_files(ScanMatrix, cuboid_data,
-                             cuboid_scaling_factor=1e-9)
+    dip_inversion.read_files(ScanMatrix, cuboid_data, cuboid_scaling_factor=1e-9)
+    dip_inversion.set_scan_domain(gen_sd_mesh_from='sensor_center_domain')
     # print(dip_inversion.cuboids)
+    print(dip_inversion.sensor_center_domain)
 
-    dip_inversion.prepare_matrix(method='numba', verbose=True)
+    dip_inversion.prepare_matrix(method='cython')
     # FG_copy = np.copy(dip_inversion.Forward_G)
 
     # dip_inversion.calculate_inverse(method='scipy_pinv', atol=1e-30)
@@ -61,6 +63,7 @@ def test_three_cuboids():
     # Mas values at the final column
     MagTheory = cube_props_theory[:, -1]
     MagInversion = np.linalg.norm(dip_inversion.Mag.reshape(-1, 3), axis=1)
+    print(MagInversion)
 
     # Check relative error is less than 1% = 0.01
     print('-' * 10)

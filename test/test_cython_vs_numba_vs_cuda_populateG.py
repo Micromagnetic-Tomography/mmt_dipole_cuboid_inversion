@@ -16,7 +16,7 @@ QDMfile = data_path / 'class_QDM_result2.txt'
 cuboidfile = data_path / 'class_cuboid_result2.txt'
 
 # size of QDM domain
-QDM_domain = np.array([[300, 1250], [450, 1400]]) * 1e-6
+QDM_sensor_domain = np.array([[300, 1250], [450, 1400]]) * 1e-6
 QDM_spacing = 1.2e-6
 QDM_deltax = 0.6e-6
 QDM_deltay = 0.6e-6
@@ -25,24 +25,19 @@ sample_height = 80e-6
 scan_height = 6e-6
 
 mag_svd = dci.DipoleCuboidInversion(
-    QDM_domain, QDM_spacing, QDM_deltax, QDM_deltay, QDM_area, scan_height,
+    None, QDM_sensor_domain, QDM_spacing, QDM_deltax, QDM_deltay, QDM_area, scan_height,
     verbose=True)
 
 mag_svd.read_files(QDMfile, cuboidfile, 1e-6)
+mag_svd.set_scan_domain(gen_sd_mesh_from='sensor_center_domain')
 
 results = {}
 
-t_cython_8 = timeit.timeit(
-        "mag_svd.prepare_matrix(method='cython')",
-        globals=globals(), number=10)
+t_cython_8 = timeit.timeit("mag_svd.prepare_matrix(method='cython')", globals=globals(), number=10)
 
-t_numba = timeit.timeit(
-        "mag_svd.prepare_matrix(method='numba')",
-        globals=globals(), number=10)
+t_numba = timeit.timeit("mag_svd.prepare_matrix(method='numba')", globals=globals(), number=10)
 
-t_cuda = timeit.timeit(
-        "mag_svd.prepare_matrix(method='cuda')",
-        globals=globals(), number=10)
+t_cuda = timeit.timeit("mag_svd.prepare_matrix(method='cuda')", globals=globals(), number=10)
 
 results['cython_8_threads'] = t_cython_8
 results['numba'] = t_numba
