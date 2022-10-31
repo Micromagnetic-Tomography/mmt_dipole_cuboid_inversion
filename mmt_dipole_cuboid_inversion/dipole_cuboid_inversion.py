@@ -363,14 +363,16 @@ class DipoleCuboidInversion(object):
                        Origin: bool = True,
                        method: _PrepMatOps = 'cython'
                        ):
-        """ Allocates/instantiates the Numpy arrays to populate the forward
-        matrix
+        """Defines Numpy arrays and populates the forward matrix
+
+        The calculation uses the positions of the centers of the scan sensors,
+        which are arranged in a 2D regular rectangular mesh.
 
         Parameters
         ----------
         Origin
-            If True, use the scan_domain lower left coordinates as the scan grid
-            origin. If False, set scan grid origin at (0., 0.)
+            If True, use the sensor_center_domain lower left coordinates as the
+            scan grid origin. If False, set sensor grid origin at (0., 0.)
         method
             Populating the matrix can be done using either `numba` or `cython`
             or (nvidia) `cuda` optimisation.
@@ -385,7 +387,7 @@ class DipoleCuboidInversion(object):
         if method == 'cython':
             # The Cython function populates the matrix column-wise via a 1D arr
             pop_matrix_lib.populate_matrix_cython(
-                self.Forward_G, self.scan_domain[0], self.scan_height,
+                self.Forward_G, self.sensor_center_domain[0], self.scan_height,
                 np.ravel(self.cuboids), self.Ncub,
                 self.Npart, self.Ny, self.Nx,
                 self.scan_spacing[0], self.scan_spacing[1],
@@ -396,7 +398,7 @@ class DipoleCuboidInversion(object):
                 raise Exception('The cuda method is not available. Stopping calculation')
 
             pop_matrix_cudalib.populate_matrix_cython(
-                self.Forward_G, self.scan_domain[0], self.scan_height,
+                self.Forward_G, self.sensor_center_domain[0], self.scan_height,
                 np.ravel(self.cuboids), self.Ncub,
                 self.Npart, self.Ny, self.Nx,
                 self.scan_spacing[0], self.scan_spacing[1],
@@ -405,7 +407,7 @@ class DipoleCuboidInversion(object):
 
         elif method == 'numba':
             populate_matrix_numba(
-                self.Forward_G, self.scan_domain, self.scan_height,
+                self.Forward_G, self.sensor_center_domain, self.scan_height,
                 self.cuboids, self.Npart, self.Ny, self.Nx,
                 self.scan_spacing[0], self.scan_spacing[1],
                 self.scan_deltax, self.scan_deltay,
