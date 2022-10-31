@@ -319,8 +319,8 @@ class DipoleCuboidInversion(object):
                     print(f'Domain limit {i} has been reset from {self.sensor_center_domain[1, i]} to {new_domain[i]}.')
                     self.sensor_center_domain[1, i] = new_domain[i]
 
-            self.scan_domain[0] = self.sensor_center_domain[0] - np.array([self.scan_deltax, self.scan_deltay])
-            self.scan_domain[1] = self.sensor_center_domain[1] + np.array([self.scan_deltax, self.scan_deltay])
+            self.scan_domain[0] = self.sensor_center_domain[0] - self.scan_spacing
+            self.scan_domain[1] = self.sensor_center_domain[1] + self.scan_spacing
 
         elif gen_sd_mesh_from == 'scan_domain':
 
@@ -331,15 +331,18 @@ class DipoleCuboidInversion(object):
                     print(f'Domain limit {i} has been reset from {self.scan_domain[1, i]} to {new_domain[i]}.')
                     self.scan_domain[1, i] = new_domain[i]
 
-            self.sensor_center_domain[0] = self.scan_domain[0] + np.array([self.scan_deltax, self.scan_deltay])
-            self.sensor_center_domain[1] = self.scan_domain[1] - np.array([self.scan_deltax, self.scan_deltay])
+            self.sensor_center_domain[0] = self.scan_domain[0] + self.scan_spacing
+            self.sensor_center_domain[1] = self.scan_domain[1] - self.scan_spacing
 
         elif gen_sd_mesh_from == 'sd_partitioned':
-            self.scan_spacing = (self.scan_domain[1, 0] / (self.Nx + 1),
-                                 self.scan_domain[1, 1] / (self.Ny + 1))
+            self.scan_spacing = ((self.scan_domain[1, 0] - self.scan_domain[0, 0]) / (self.Nx + 1),
+                                 (self.scan_domain[1, 1] - self.scan_domain[0, 1]) / (self.Ny + 1))
             if self.verbose:
                 print(f'Scan spacing x defined as: {self.scan_spacing[0]}')
                 print(f'Scan spacing y defined as: {self.scan_spacing[1]}')
+
+            self.sensor_center_domain[0] = self.scan_domain[0] + self.scan_spacing
+            self.sensor_center_domain[1] = self.scan_domain[1] - self.scan_spacing
 
         else:
             raise TypeError('Specify a valid option to generate the measurement mesh geometry')
