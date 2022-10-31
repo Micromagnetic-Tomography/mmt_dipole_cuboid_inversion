@@ -114,7 +114,7 @@ class DipoleCuboidInversion(object):
         scan_area
             Area of scan sensor in square metres
         scan_height
-            Distance between sample and scan surface in metres. If this
+            Distance between sample and scan surface in meters. If this
             parameter is defined negative, it is assumed that we have a left
             handed coordinate system with the z-direction pointing downwards,
             i.e. towards depth, so cuboids must be defined with positive
@@ -129,6 +129,7 @@ class DipoleCuboidInversion(object):
         scan_data
         cuboid_data
         scan_domain
+        sensor_center_domain
         scan_spacing
         scan_deltax
         scan_deltay
@@ -143,8 +144,14 @@ class DipoleCuboidInversion(object):
 
             scan_matrix
             cuboids
+            Nx, Ny
             Npart
             Ncub
+            scan_domain (*)
+            sensor_center_domain (*)
+            scan_spacing (*)
+
+        (*) Depending on the `gen_sd_mesh_from` method
 
         """
 
@@ -185,15 +192,15 @@ class DipoleCuboidInversion(object):
         with open(file_path, 'r') as f:
             metadict = json.load(f)
 
-        scan_domain = np.array([[metadict.get('Scan domain LL-x-y')[0],
-                                 metadict.get('Scan domain LL-x-y')[1]],
-                                [metadict.get('Scan domain UR-x-y')[0],
-                                 metadict.get('Scan domain UR-x-y')[1]]])
+        scan_domain = np.array([[metadict.get('Scan domain LL-x-y', 0.0)[0],
+                                 metadict.get('Scan domain LL-x-y', 0.0)[1]],
+                                [metadict.get('Scan domain UR-x-y', 0.0)[0],
+                                 metadict.get('Scan domain UR-x-y', 0.0)[1]]])
 
-        sensor_domain = np.array([[metadict.get('Sensor center domain LL-x-y')[0],
-                                   metadict.get('Sensor center domain LL-x-y')[1]],
-                                  [metadict.get('Sensor center domain UR-x-y')[0],
-                                   metadict.get('Sensor center domain UR-x-y')[1]]])
+        sensor_domain = np.array([[metadict.get('Sensor center domain LL-x-y', 0.0)[0],
+                                   metadict.get('Sensor center domain LL-x-y', 0.0)[1]],
+                                  [metadict.get('Sensor center domain UR-x-y', 0.0)[0],
+                                   metadict.get('Sensor center domain UR-x-y', 0.0)[1]]])
 
         return cls(scan_domain,
                    sensor_domain,
@@ -204,14 +211,15 @@ class DipoleCuboidInversion(object):
                    metadict.get('Scan height'),
                    verbose=verbose)
 
-    def read_files(self,
-                   scan_data: Union[Path, str, np.ndarray, np.matrix],
-                   cuboid_data: Union[Path, str, np.ndarray, np.matrix],
-                   cuboid_scaling_factor: float,
-                   tol: float = 1e-7,
-                   scan_matrix_reader_kwargs={},
-                   cuboids_reader_kwargs={}
-                   ):
+    def read_files_and_set_scan_domain(
+            self,
+            scan_data: Union[Path, str, np.ndarray, np.matrix],
+            cuboid_data: Union[Path, str, np.ndarray, np.matrix],
+            cuboid_scaling_factor: float,
+            gen_sd_mesh_from='sensor_center_domain',
+            tol_sd_limits: float = 1e-7,
+            scan_matrix_reader_kwargs={},
+            cuboids_reader_kwargs={}):
         """Reads in scan data and cuboid data from text/csv files
 
         This function also corrects the limits of the `scan_domain` attribute
@@ -228,8 +236,21 @@ class DipoleCuboidInversion(object):
             `(x, y, z, dx, dy, dz, index)`
         cuboid_scaling_factor
             Scaling factor for the cuboid positions and lengths
-        tol
-            Tolerance for checking scan_domain. Default is 1e-7
+        gen_sd_mesh_from
+            Method to set the limits or spacings of the scan domain. The
+            `sensor_center_domain` will use the centers of the lower left and
+            upper right sensors of the scan surface, which are defined in the
+            variable of the same name. Similarly, The `scan_domain` uses
+            the lower left and upper right coordinates of the scan surface, from
+            the `scan_domain` variable. These two methods require the scan
+            spacings, and the new domain limit is compared to the limits
+            given by the upper right point in `*_domain`. The option
+            `sd_partitioned` uses the matrix dimensions of `scan_data` to
+            partition the `scan_domain` limits by re-defining the
+            `scan_spacing` variable.
+        tol_sd_limits
+            Tolerance for checking `scan_domain` in two of the `gen_sd_mesh_from`
+            methods
         scan_matrix_reader_kwargs
             Extra arguments to the reader of the scan file, e.g. `delimiter=','`
         cuboids_reader_kwargs
@@ -258,24 +279,6 @@ class DipoleCuboidInversion(object):
         np.multiply(self.scan_matrix, self.scan_area, out=self.scan_matrix)
 
         # ---------------------------------------------------------------------
-        # Set the limits of the scan domain
-
-        self.Ny, self.Nx = self.scan_matrix.shape
-        new_domain = self.scan_domain[0, 0] + (self.Nx - 1) * self.scan_spacing[0]
-        if abs(new_domain - self.scan_domain[1, 0]) > tol:
-            print(f'scan_domain[1, 0] has been reset from '
-                  f'{self.scan_domain[1, 0]} to {new_domain}.')
-            self.scan_domain[1, 0] = new_domain
-        new_domain = self.scan_domain[0, 1] + (self.Ny - 1) * self.scan_spacing[1]
-        if abs(new_domain - self.scan_domain[1, 1]) > tol:
-            print(f'scan_domain[1, 1] has been reset from '
-                  f'{self.scan_domain[1, 1]} to {new_domain}.')
-            self.scan_domain[1, 1] = new_domain
-        if abs(self.scan_deltax * self.scan_deltay * 4 - self.scan_area) > tol**2:
-            print('The sensor is not a rectangle. '
-                  'Calculation will probably go wrong here!')
-
-        # ---------------------------------------------------------------------
 
         # Read cuboid data in a 2D array
         if isinstance(cuboid_data, (np.ndarray, np.matrix)):
@@ -293,6 +296,45 @@ class DipoleCuboidInversion(object):
         self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
+
+        # ---------------------------------------------------------------------
+        # Set the limits of the scan domain
+
+        self.Ny, self.Nx = self.scan_matrix.shape
+        new_domain = np.zeros(2, dtype=np.float64)
+
+        if gen_sd_mesh_from == 'sensor_center_domain':
+
+            new_domain[0] = self.sensor_center_domain[0, 0] + (self.Nx - 1) * self.scan_spacing[0]
+            new_domain[1] = self.sensor_center_domain[0, 1] + (self.Ny - 1) * self.scan_spacing[1]
+            for i in range(2):
+                if abs(new_domain[i] - self.sensor_center_domain[1, i]) > tol_sd_limits:
+                    print(f'Domain limit {i} has been reset from {self.sensor_center_domain[1, i]} to {new_domain[i]}.')
+                    self.sensor_center_domain[1, i] = new_domain[i]
+
+        elif gen_sd_mesh_from == 'scan_domain':
+
+            new_domain[0] = self.scan_domain[0, 0] + self.Nx * self.scan_spacing[0]
+            new_domain[1] = self.scan_domain[0, 1] + self.Ny * self.scan_spacing[1]
+            for i in range(2):
+                if abs(new_domain[i] - self.scan_domain[1, i]) > tol_sd_limits:
+                    print(f'Domain limit {i} has been reset from {self.scan_domain[1, i]} to {new_domain[i]}.')
+                    self.scan_domain[1, i] = new_domain[i]
+
+        elif gen_sd_mesh_from == 'sd_partitioned':
+            self.scan_spacing = (self.scan_domain[1, 0] / (self.Nx + 1),
+                                 self.scan_domain[1, 1] / (self.Ny + 1))
+            if self.verbose:
+                print(f'Scan spacing x defined as: {self.scan_spacing[0]}')
+                print(f'Scan spacing y defined as: {self.scan_spacing[1]}')
+
+        else:
+            raise TypeError('Specify a valid option to generate the measurement mesh geometry')
+
+        if abs(self.scan_deltax * self.scan_deltay * 4 - self.scan_area) > tol_sd_limits ** 2:
+            warnings.warn('The sensor geometry is not a rectangle')
+
+        # ---------------------------------------------------------------------
 
     _PrepMatOps = Literal['cython', 'numba', 'cuda']
 
