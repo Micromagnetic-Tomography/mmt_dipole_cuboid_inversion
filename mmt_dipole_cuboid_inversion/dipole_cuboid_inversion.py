@@ -517,8 +517,8 @@ class DipoleCuboidInversion(object):
             **method_inverse_kwargs):
         """Shortcut method to compute the magnetization of the grains
 
-        It calls three methods: `read_files`, `prepare_matrix` and
-        `calculate_inverse`
+        It calls four methods: `read_files`, `set_scan_domain`,
+        `prepare_matrix` and `calculate_inverse`
 
         Parameters
         ----------
