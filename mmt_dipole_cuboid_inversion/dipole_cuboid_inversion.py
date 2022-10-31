@@ -157,14 +157,14 @@ class DipoleCuboidInversion(object):
 
         """
 
-        if scan_domain is None:
-            self.scan_domain = np.zeros((2, 2))
-        if sensor_center_domain is None:
-            self.sensor_center_domain = np.zeros((2, 2))
+        self.scan_domain = np.zeros((2, 2)) if scan_domain is None else scan_domain
+        self.sensor_center_domain = np.zeros((2, 2)) if sensor_center_domain is None else sensor_center_domain
+
         if isinstance(scan_spacing, Tuple):
             self.scan_spacing = np.array(scan_spacing)
         else:
             self.scan_spacing = np.array([scan_spacing, scan_spacing])
+
         self.scan_deltax = scan_deltax
         self.scan_deltay = scan_deltay
         self.scan_area = scan_area
