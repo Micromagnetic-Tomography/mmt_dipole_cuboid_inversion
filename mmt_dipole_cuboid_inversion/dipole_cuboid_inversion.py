@@ -88,8 +88,13 @@ class DipoleCuboidInversion(object):
         data. Grains are modelled as aggregations of cuboids with dipole order
         magnetic moments.
 
-        The scan domain coordinates are computed when calling the `read_files`
-        method.
+        The scan surface data and cuboid data are loaded using the `read_files`
+        array. Then, the scan domain coordinates are defined when calling the
+        `set_scan_domain` method. The scan domain is defined as a regular mesh
+        of sensors whose centers are spaced according to `scan_spacing`.
+
+        The sensors in the scan surface are modelled with rectangular geometry
+        with side lengths given by the `scan_delta*` variables.
 
         Parameters
         ----------
@@ -105,9 +110,9 @@ class DipoleCuboidInversion(object):
             Distance between two adjacent scanning points in metres. Can be
             passed as a float, if the spacing is the same in x and y, or as a tuple
         scan_deltax
-            Half length of scan sensor
+            Half length of scan sensor (can be different to scan spacing)
         scan_deltay
-            Half width of scan sensor
+            Half width of scan sensor (can be different to scan spacing)
         scan_area
             Area of scan sensor in square metres
         scan_height
