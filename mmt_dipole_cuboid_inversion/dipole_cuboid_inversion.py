@@ -140,7 +140,7 @@ class DipoleCuboidInversion(object):
 
         Notes
         -----
-        The read_files function sets::
+        The `read_files` and `set_scan_domain` function set::
 
             scan_matrix
             cuboids
@@ -168,8 +168,10 @@ class DipoleCuboidInversion(object):
         self.scan_area = scan_area
         self.scan_height = scan_height
 
+        self.Nx, self.Ny = 0, 0
         self.Inverse_G = np.empty([])
         self.Mag = np.empty([])
+        self.scan_matrix = np.empty([])
         self.verbose = verbose
 
     @classmethod
@@ -211,19 +213,13 @@ class DipoleCuboidInversion(object):
                    metadict.get('Scan height'),
                    verbose=verbose)
 
-    def read_files_and_set_scan_domain(
-            self,
-            scan_data: Union[Path, str, np.ndarray, np.matrix],
-            cuboid_data: Union[Path, str, np.ndarray, np.matrix],
-            cuboid_scaling_factor: float,
-            gen_sd_mesh_from='sensor_center_domain',
-            tol_sd_limits: float = 1e-7,
-            scan_matrix_reader_kwargs={},
-            cuboids_reader_kwargs={}):
+    def read_files(self,
+                   scan_data: Union[Path, str, np.ndarray, np.matrix],
+                   cuboid_data: Union[Path, str, np.ndarray, np.matrix],
+                   cuboid_scaling_factor: float,
+                   scan_matrix_reader_kwargs={},
+                   cuboids_reader_kwargs={}):
         """Reads in scan data and cuboid data from text/csv files
-
-        This function also corrects the limits of the `scan_domain` attribute
-        according to the size of the scan data matrix.
 
         Parameters
         ----------
@@ -236,21 +232,6 @@ class DipoleCuboidInversion(object):
             `(x, y, z, dx, dy, dz, index)`
         cuboid_scaling_factor
             Scaling factor for the cuboid positions and lengths
-        gen_sd_mesh_from
-            Method to set the limits or spacings of the scan domain. The
-            `sensor_center_domain` will use the centers of the lower left and
-            upper right sensors of the scan surface, which are defined in the
-            variable of the same name. Similarly, The `scan_domain` uses
-            the lower left and upper right coordinates of the scan surface, from
-            the `scan_domain` variable. These two methods require the scan
-            spacings, and the new domain limit is compared to the limits
-            given by the upper right point in `*_domain`. The option
-            `sd_partitioned` uses the matrix dimensions of `scan_data` to
-            partition the `scan_domain` limits by re-defining the
-            `scan_spacing` variable.
-        tol_sd_limits
-            Tolerance for checking `scan_domain` in two of the `gen_sd_mesh_from`
-            methods
         scan_matrix_reader_kwargs
             Extra arguments to the reader of the scan file, e.g. `delimiter=','`
         cuboids_reader_kwargs
@@ -297,10 +278,40 @@ class DipoleCuboidInversion(object):
         self.Npart = len(np.unique(self.cuboids[:, 6]))
         self.Ncub = len(self.cuboids[:, 6])
 
-        # ---------------------------------------------------------------------
-        # Set the limits of the scan domain
+    _SetScanDomainOps = Literal['sensor_center_domain', 'scan_domain', 'sd_partitioned']
 
-        self.Ny, self.Nx = self.scan_matrix.shape
+    def set_scan_domain(self,
+                        gen_sd_mesh_from: _SetScanDomainOps = 'sensor_center_domain',
+                        tol_sd_limits: float = 1e-7):
+        """Sets the scan domain limits and spacings
+
+        This function might also correct the limits of the `scan_domain`
+        attribute according to the size of the scan data matrix.
+
+        Parameters
+        ----------
+        gen_sd_mesh_from
+            Method to set the limits or spacings of the scan domain. The
+            `sensor_center_domain` will use the centers of the lower left and
+            upper right sensors of the scan surface, which are defined in the
+            variable of the same name. Similarly, The `scan_domain` uses
+            the lower left and upper right coordinates of the scan surface, from
+            the `scan_domain` variable. These two methods require the scan
+            spacings, and the new domain limit is compared to the limits
+            given by the upper right point in `*_domain`. The option
+            `sd_partitioned` uses the matrix dimensions of `scan_data` to
+            partition the `scan_domain` limits by re-defining the
+            `scan_spacing` variable.
+        tol_sd_limits
+            Tolerance for checking `scan_domain` in two of the `gen_sd_mesh_from`
+            methods
+        """
+        if self.scan_matrix.ndim > 1:
+            self.Ny, self.Nx = self.scan_matrix.shape
+        else:
+            raise RuntimeError('Scan domain requires that scan_matrix is defined. '
+                               'Run the read_files method or set the 2D scan_matrix array')
+
         new_domain = np.zeros(2, dtype=np.float64)
 
         if gen_sd_mesh_from == 'sensor_center_domain':
