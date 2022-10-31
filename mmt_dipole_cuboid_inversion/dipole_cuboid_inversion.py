@@ -10,12 +10,9 @@ try:
     HASCUDA = True
 except ImportError:
     HASCUDA = False
-from typing import Literal   # Working with Python >3.8
-from typing import Union     # Working with Python >3.8
-from typing import Tuple     # Working with Python >3.8
-from typing import Optional  # Working with Python >3.8
+from typing import Literal, Union, Tuple, Optional
+import numpy.typing as npt
 # from typing import Type      # Working with Python >3.8
-# import os
 import json
 import warnings
 # Make a proper logging system if we grow this library:
@@ -74,8 +71,8 @@ def loadtxt_iter(txtfile, delimiter=None, skiprows=0, dtype=np.float64):
 class DipoleCuboidInversion(object):
 
     def __init__(self,
-                 scan_domain: Optional[np.ndarray] = None,
-                 sensor_center_domain: Optional[np.ndarray] = None,
+                 scan_domain: Optional[npt.NDArray[np.float64]] = None,
+                 sensor_center_domain: Optional[npt.NDArray[np.float64]] = None,
                  scan_spacing: float | Tuple[float, float] = 1e-6,
                  scan_deltax: float = 0.5e-6,
                  scan_deltay: float = 0.5e-6,
@@ -160,9 +157,9 @@ class DipoleCuboidInversion(object):
         if sensor_center_domain is None:
             self.sensor_center_domain = np.zeros((2, 2))
         if isinstance(scan_spacing, Tuple):
-            self.scan_spacing = scan_spacing
+            self.scan_spacing = np.array(scan_spacing)
         else:
-            self.scan_spacing = (scan_spacing, scan_spacing)
+            self.scan_spacing = np.array([scan_spacing, scan_spacing])
         self.scan_deltax = scan_deltax
         self.scan_deltay = scan_deltay
         self.scan_area = scan_area
@@ -214,8 +211,8 @@ class DipoleCuboidInversion(object):
                    verbose=verbose)
 
     def read_files(self,
-                   scan_data: Union[Path, str, np.ndarray, np.matrix],
-                   cuboid_data: Union[Path, str, np.ndarray, np.matrix],
+                   scan_data: Union[Path, str, npt.NDArray[np.float64]],
+                   cuboid_data: Union[Path, str, npt.NDArray[np.float64]],
                    cuboid_scaling_factor: float,
                    scan_matrix_reader_kwargs={},
                    cuboids_reader_kwargs={}):
@@ -224,12 +221,11 @@ class DipoleCuboidInversion(object):
         Parameters
         ----------
         scan_data
-            File path to a text or `npy` file, `np.ndarray` or `np.matrix` with
+            File path to a text or `npy` file, `np.ndarray` with
             (`Nx` columns, `Ny` rows), containing the scan data in Tesla
         cuboid_data
-            File path, `np.ndarray,` or `np.matrix` containing the location and
-            size of the grains in micrometer, with format
-            `(x, y, z, dx, dy, dz, index)`
+            File path, `np.ndarray` containing the location and size of the
+            grains in micrometer, with format `(x, y, z, dx, dy, dz, index)`
         cuboid_scaling_factor
             Scaling factor for the cuboid positions and lengths
         scan_matrix_reader_kwargs
@@ -238,7 +234,7 @@ class DipoleCuboidInversion(object):
             Extra arguments to the reader of cuboid files, e.g. `skiprows=2`
         """
 
-        if isinstance(scan_data, (np.ndarray, np.matrix)):
+        if isinstance(scan_data, (np.ndarray)):
             self.scan_matrix = np.copy(scan_data)
         else:
             try:
@@ -254,7 +250,7 @@ class DipoleCuboidInversion(object):
                                                     **scan_matrix_reader_kwargs)
             except TypeError:
                 print(f'{scan_data} is not a valid file name and cannot be '
-                      'loaded. You can also try an np.ndarray or np.matrix')
+                      'loaded. You can also try an np.ndarray')
                 raise
 
         np.multiply(self.scan_matrix, self.scan_area, out=self.scan_matrix)
@@ -262,7 +258,7 @@ class DipoleCuboidInversion(object):
         # ---------------------------------------------------------------------
 
         # Read cuboid data in a 2D array
-        if isinstance(cuboid_data, (np.ndarray, np.matrix)):
+        if isinstance(cuboid_data, (np.ndarray)):
             self.cuboids = np.copy(cuboid_data)
         else:
             try:
@@ -272,7 +268,7 @@ class DipoleCuboidInversion(object):
                 self.cuboids = loadtxt_iter(cuboid_path, **cuboids_reader_kwargs)
             except TypeError:
                 print(f'{cuboid_data} is not a valid file name and cannot be '
-                      'loaded. You can also try an np.ndarray or np.matrix')
+                      'loaded. You can also try an np.ndarray')
 
         self.cuboids[:, :6] = self.cuboids[:, :6] * cuboid_scaling_factor
         self.Npart = len(np.unique(self.cuboids[:, 6]))
@@ -323,6 +319,9 @@ class DipoleCuboidInversion(object):
                     print(f'Domain limit {i} has been reset from {self.sensor_center_domain[1, i]} to {new_domain[i]}.')
                     self.sensor_center_domain[1, i] = new_domain[i]
 
+            self.scan_domain[0] = self.sensor_center_domain[0] - np.array([self.scan_deltax, self.scan_deltay])
+            self.scan_domain[1] = self.sensor_center_domain[1] + np.array([self.scan_deltax, self.scan_deltay])
+
         elif gen_sd_mesh_from == 'scan_domain':
 
             new_domain[0] = self.scan_domain[0, 0] + self.Nx * self.scan_spacing[0]
@@ -331,6 +330,9 @@ class DipoleCuboidInversion(object):
                 if abs(new_domain[i] - self.scan_domain[1, i]) > tol_sd_limits:
                     print(f'Domain limit {i} has been reset from {self.scan_domain[1, i]} to {new_domain[i]}.')
                     self.scan_domain[1, i] = new_domain[i]
+
+            self.sensor_center_domain[0] = self.scan_domain[0] + np.array([self.scan_deltax, self.scan_deltay])
+            self.sensor_center_domain[1] = self.scan_domain[1] - np.array([self.scan_deltax, self.scan_deltay])
 
         elif gen_sd_mesh_from == 'sd_partitioned':
             self.scan_spacing = (self.scan_domain[1, 0] / (self.Nx + 1),
@@ -498,8 +500,8 @@ class DipoleCuboidInversion(object):
 
     def obtain_magnetization(
             self,
-            scan_data: Path or str or np.ndarray or np.matrix,
-            cuboid_data: Path or str or np.ndarray or np.matrix,
+            scan_data: Path | str | npt.NDArray[np.float64],
+            cuboid_data: Path | str | npt.NDArray[np.float64],
             cuboid_scaling_factor: float,
             method_populate: _PrepMatOps = 'cython',
             method_inverse: _MethodOps = 'scipy_pinv',
@@ -512,11 +514,11 @@ class DipoleCuboidInversion(object):
         Parameters
         ----------
         scan_data
-            Matrix file, `np.ndarray` or `np.matrix` (Nx columns, Ny rows)
-            containing the scan data in T
+            Matrix file or `np.ndarray` (Nx columns, Ny rows) containing the
+            scan data in T
         cuboid_data
-            File, np.ndarray, or np.matrix (x, y, z, dx, dy, dz, index)
-            containing location and size grains in micrometers
+            File or np.ndarray (x, y, z, dx, dy, dz, index) containing location
+            and size grains in micrometers
         cuboid_scaling_factor
             Scaling factor for the cuboid positions and lengths
         method_populate
