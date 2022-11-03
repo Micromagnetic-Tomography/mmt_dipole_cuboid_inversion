@@ -12,17 +12,17 @@ digraph "packages" {
     clib [label=<
         <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
             <TR><TD><B>cython_lib</B></TD></TR>
-            <TR><TD>(Fn) populate_matrix_cython</TD></TR>
+            <TR><TD>(Fn) populate_matrix</TD></TR>
         </TABLE>>];
     cclib [label=<
         <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
             <TR><TD><B>cython_cuda_lib</B></TD></TR>
-            <TR><TD>(Fn) populate_matrix_cython</TD></TR>
+            <TR><TD>(Fn) populate_matrix</TD></TR>
         </TABLE>>];
     nlib [label=<
         <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
             <TR><TD><B>numba_lib</B></TD></TR>
-            <TR><TD>(Fn) populate_matrix_numba</TD></TR>
+            <TR><TD>(Fn) populate_matrix</TD></TR>
         </TABLE>>];
     tools [label=<
         <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
