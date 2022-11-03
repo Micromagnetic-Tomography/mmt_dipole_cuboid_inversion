@@ -3,10 +3,10 @@ from __future__ import annotations
 import numpy as np
 from pathlib import Path
 import scipy.linalg as spl
-from .numba_lib import populate_matrix_numba
-from .cython_lib import pop_matrix_lib   # the cython populate_matrix function
+from .numba_lib import populate_matrix as pop_matrix_numba
+from .cython_lib import populate_matrix as pop_matrix_C  # the C populate_matrix function
 try:
-    from .cython_cuda_lib import pop_matrix_cudalib   # the cuda populate_matrix function
+    from .cython_cuda_lib import populate_matrix as pop_matrix_CUDA  # the cuda populate_matrix function
     HASCUDA = True
 except ImportError:
     HASCUDA = False
@@ -386,7 +386,7 @@ class DipoleCuboidInversion(object):
 
         if method == 'cython':
             # The Cython function populates the matrix column-wise via a 1D arr
-            pop_matrix_lib.populate_matrix_cython(
+            pop_matrix_C(
                 self.Forward_G, self.sensor_center_domain[0], self.scan_height,
                 np.ravel(self.cuboids), self.Ncub,
                 self.Npart, self.Ny, self.Nx,
@@ -397,7 +397,7 @@ class DipoleCuboidInversion(object):
             if HASCUDA is False:
                 raise Exception('The cuda method is not available. Stopping calculation')
 
-            pop_matrix_cudalib.populate_matrix_cython(
+            pop_matrix_CUDA(
                 self.Forward_G, self.sensor_center_domain[0], self.scan_height,
                 np.ravel(self.cuboids), self.Ncub,
                 self.Npart, self.Ny, self.Nx,
@@ -406,17 +406,14 @@ class DipoleCuboidInversion(object):
                 Origin, int(self.verbose))
 
         elif method == 'numba':
-            populate_matrix_numba(
+            pop_matrix_numba(
                 self.Forward_G, self.sensor_center_domain, self.scan_height,
                 self.cuboids, self.Npart, self.Ny, self.Nx,
                 self.scan_spacing[0], self.scan_spacing[1],
                 self.scan_deltax, self.scan_deltay,
                 Origin=Origin, verbose=self.verbose)
 
-    _MethodOps = Literal['scipy_lapack',
-                         'scipy_pinv',
-                         'scipy_pinv2',
-                         'numpy_pinv']
+    _MethodOps = Literal['scipy_lapack', 'scipy_pinv', 'scipy_pinv2', 'numpy_pinv']
 
     def calculate_inverse(self,
                           method: _MethodOps = 'scipy_pinv',
@@ -466,8 +463,7 @@ class DipoleCuboidInversion(object):
             elif method == 'numpy_pinv':
                 Inverse_G = np.linalg.pinv(self.Forward_G, **method_kwargs)
                 self.Mag = np.matmul(Inverse_G, scan_flatten)
-                if self.verbose:
-                    print(SUCC_MSG)
+                if self.verbose: print(SUCC_MSG)
 
             elif method == 'scipy_lapack':
                 # Solve G^t * phi = G^t * G * M

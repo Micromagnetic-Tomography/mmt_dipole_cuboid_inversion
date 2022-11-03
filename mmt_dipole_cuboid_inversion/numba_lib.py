@@ -3,9 +3,9 @@ import numpy as np
 
 
 @nb.jit(nopython=True)
-def populate_matrix_numba(G, scan_domain, scan_height, cuboids, Npart,
-                          Ny, Nx, scan_spacing_x, scan_spacing_y,
-                          scan_deltax, scan_deltay, Origin, verbose=True):
+def populate_matrix(G, scan_domain, scan_height, cuboids, Npart,
+                    Ny, Nx, scan_spacing_x, scan_spacing_y,
+                    scan_deltax, scan_deltay, Origin, verbose=True):
     """
     Main function to populate the G matrix
 

@@ -12,6 +12,7 @@ import numpy
 import os
 from os.path import join as pjoin
 
+
 # -----------------------------------------------------------------------------
 # CUDA SPECIFIC FUNCTIONS
 
@@ -49,8 +50,7 @@ def locate_cuda():
 
         home = os.path.dirname(os.path.dirname(nvcc))
 
-    cudaconfig = {'home':home, 'nvcc':nvcc,
-                  'include': pjoin(home, 'include'),
+    cudaconfig = {'home': home, 'nvcc': nvcc, 'include': pjoin(home, 'include'),
                   'lib64': pjoin(home, 'lib64')}
 
     for k, v in cudaconfig.items():
@@ -60,19 +60,21 @@ def locate_cuda():
 
     return cudaconfig
 
+
 CUDA = locate_cuda()
 # print(CUDA)
+
 
 def customize_compiler_for_nvcc(self):
     """inject deep into distutils to customize how the dispatch
     to gcc/nvcc works.
-    
+
     If you subclass UnixCCompiler, it's not trivial to get your subclass
     injected in, and still have the right customizations (i.e.
     distutils.sysconfig.customize_compiler) run on it. So instead of going
     the OO route, I have this. Note, it's kindof like a wierd functional
     subclassing going on."""
-    
+
     # tell the compiler it can processes .cu
     self.src_extensions.append('.cu')
 
@@ -107,6 +109,7 @@ class custom_build_ext(build_ext):
         customize_compiler_for_nvcc(self.compiler)
         build_ext.build_extensions(self)
 
+
 # -----------------------------------------------------------------------------
 # Compilation of CPP modules
 
@@ -126,8 +129,7 @@ extensions = [
                "mmt_dipole_cuboid_inversion/cython_lib/pop_matrix_C_lib.c"],
               extra_compile_args=com_args,
               extra_link_args=link_args,
-              include_dirs=[numpy.get_include()]
-    )
+              include_dirs=[numpy.get_include()])
 ]
 
 if CUDA:
@@ -151,10 +153,9 @@ if CUDA:
                   libraries=['cudart'],
                   language='c++',
                   extra_compile_args=com_args,
-                  include_dirs = [numpy.get_include(), CUDA['include'], '.'],
+                  include_dirs=[numpy.get_include(), CUDA['include'], '.'],
                   library_dirs=[CUDA['lib64']],
-                  runtime_library_dirs=[CUDA['lib64']]
-        )
+                  runtime_library_dirs=[CUDA['lib64']])
     )
 
 # -----------------------------------------------------------------------------
@@ -197,14 +198,11 @@ else:
 # Source: https://stackoverflow.com/questions/60501869/poetry-cython-tests-nosetests
 # distutils magic. This is essentially the same as calling
 # python setup.py build_ext --inplace
-dist = Distribution(attrs=dict(
-            cmdclass=dict(build_ext=cmdclass['build_ext']),
-            ext_modules=cythonize(extensions,
-                                  language_level=3,
-                                  ),
-            zip_safe=False
-        )
-)
+dist = Distribution(attrs=dict(cmdclass=dict(build_ext=cmdclass['build_ext']),
+                               ext_modules=cythonize(extensions,
+                                                     language_level=3),
+                               zip_safe=False)
+                    )
 build_ext_cmd = dist.get_command_obj('build_ext')
 build_ext_cmd.ensure_finalized()
 build_ext_cmd.inplace = 1
