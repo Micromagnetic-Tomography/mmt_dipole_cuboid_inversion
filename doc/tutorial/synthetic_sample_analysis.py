@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.1
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -17,13 +17,13 @@
 
 # In this tutorial we analyze the magnetic signal of a set of grains in a synthetic sample, using SQUID magnetometry data and tomographic data. We start by importing the corresponding modules for the inversion:
 
-from mmt_dipole_inverse_config import set_max_num_threads
+from mmt_dipole_cuboid_inversion_config import set_max_num_threads
 set_max_num_threads(4)
 
 import numpy as np
 import matplotlib.pyplot as plt
-import mmt_dipole_inverse as dpinv
-import mmt_dipole_inverse.tools as dpinv_tools
+import mmt_dipole_cuboid_inversion as dci
+import mmt_dipole_cuboid_inversion.tools as dcit
 
 import requests, zipfile, io
 from pathlib import Path
@@ -52,7 +52,7 @@ z.extractall(data_dir)
 
 # ## Area 1: Unknown Magnetic State
 
-# Here we define the parameters for the scan surface and the files containing the surface scanning data and the information on the cuboid representation of the grains:
+# Here we define the parameters for the scan surface and the files containing the surface scanning data and the information on the cuboid representation of the grains. We specify the scan surface area using the centers of the lower left and upper right sensors of the surface, via the `SQUID_sensor_domain` parameter.
 
 # +
 data_dir = Path('deGroot2018_data/PDI-16803')
@@ -62,7 +62,7 @@ ScanFile = data_dir / 'Area1-90-fig2MMT.txt'
 CuboidFile = data_dir / 'FWInput-FineCuboids-A1.txt'
 
 # 
-SQUID_domain = np.array([[0, 0], [350, 200]]) * 1e-6
+SQUID_sensor_domain = np.array([[0, 0], [350, 200]]) * 1e-6
 SQUID_spacing = 1e-6
 SQUID_deltax = 0.5e-6
 SQUID_deltay = 0.5e-6
@@ -70,12 +70,16 @@ SQUID_area = 1e-12
 scan_height = 2e-6
 # -
 
-# Input the scan surface parameters into the `Dipole` class:
+# Input the scan surface parameters into the `Dipole` class. The first parameter is set to `None` because it is necessary in case the scanning surface is specified using the surface corners.
 
-mag_inv = dpinv.dipole_inverse.Dipole(SQUID_domain, SQUID_spacing,
+mag_inv = dci.DipoleCuboidInversion(None, SQUID_sensor_domain, SQUID_spacing,
         SQUID_deltax, SQUID_deltay, SQUID_area, scan_height)
 
 mag_inv.read_files(ScanFile, CuboidFile, cuboid_scaling_factor=1e-6)
+
+# Generate the scan surface using the sensor centers:
+
+mag_inv.set_scan_domain(gen_sd_mesh_from='sensor_center_domain')
 
 # We then compute the forward (Green's) matrix that we use to invert the scan field:
 
@@ -83,7 +87,7 @@ mag_inv.prepare_matrix(method='cython')
 
 # And we do the inversion:
 
-mag_inv.calculate_inverse(method='scipy_pinv2', atol=1e-25)
+mag_inv.calculate_inverse(method='scipy_pinv', rtol=1e-25)
 
 # The inverted magnetization values are:
 
