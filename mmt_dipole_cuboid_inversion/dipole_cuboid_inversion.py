@@ -196,15 +196,13 @@ class DipoleCuboidInversion(object):
         with open(file_path, 'r') as f:
             metadict = json.load(f)
 
-        scan_domain = np.array([[metadict.get('Scan domain LL-x-y', 0.0)[0],
-                                 metadict.get('Scan domain LL-x-y', 0.0)[1]],
-                                [metadict.get('Scan domain UR-x-y', 0.0)[0],
-                                 metadict.get('Scan domain UR-x-y', 0.0)[1]]])
+        sd_LL_xy = metadict.get('Scan domain LL-x-y', [0.0, 0.0])
+        sd_UR_xy = metadict.get('Scan domain UR-x-y', [0.0, 0.0])
+        sCd_LL_xy = metadict.get('Sensor center domain LL-x-y', [0.0, 0.0])
+        sCd_UR_xy = metadict.get('Sensor center domain UR-x-y', [0.0, 0.0])
 
-        sensor_domain = np.array([[metadict.get('Sensor center domain LL-x-y', 0.0)[0],
-                                   metadict.get('Sensor center domain LL-x-y', 0.0)[1]],
-                                  [metadict.get('Sensor center domain UR-x-y', 0.0)[0],
-                                   metadict.get('Sensor center domain UR-x-y', 0.0)[1]]])
+        scan_domain = np.array([[sd_LL_xy[0], sd_LL_xy[1]], [sd_UR_xy[0], sd_UR_xy[1]]])
+        sensor_domain = np.array([[sCd_LL_xy[0], sCd_LL_xy[1]], [sCd_UR_xy[0], sCd_UR_xy[1]]])
 
         return cls(scan_domain,
                    sensor_domain,
@@ -324,8 +322,8 @@ class DipoleCuboidInversion(object):
                     print(f'Domain limit {i} has been reset from {self.sensor_center_domain[1, i]} to {new_domain[i]}.')
                     self.sensor_center_domain[1, i] = new_domain[i]
 
-            self.scan_domain[0] = self.sensor_center_domain[0] - self.scan_spacing
-            self.scan_domain[1] = self.sensor_center_domain[1] + self.scan_spacing
+            self.scan_domain[0] = self.sensor_center_domain[0] - self.scan_spacing * 0.5
+            self.scan_domain[1] = self.sensor_center_domain[1] + self.scan_spacing * 0.5
 
         elif gen_sd_mesh_from == 'scan_domain':
 
@@ -336,8 +334,8 @@ class DipoleCuboidInversion(object):
                     print(f'Domain limit {i} has been reset from {self.scan_domain[1, i]} to {new_domain[i]}.')
                     self.scan_domain[1, i] = new_domain[i]
 
-            self.sensor_center_domain[0] = self.scan_domain[0] + self.scan_spacing
-            self.sensor_center_domain[1] = self.scan_domain[1] - self.scan_spacing
+            self.sensor_center_domain[0] = self.scan_domain[0] + self.scan_spacing * 0.5
+            self.sensor_center_domain[1] = self.scan_domain[1] - self.scan_spacing * 0.5
 
         elif gen_sd_mesh_from == 'sd_partitioned':
             self.scan_spacing = ((self.scan_domain[1, 0] - self.scan_domain[0, 0]) / (self.Nx + 1),
@@ -346,8 +344,8 @@ class DipoleCuboidInversion(object):
                 print(f'Scan spacing x defined as: {self.scan_spacing[0]}')
                 print(f'Scan spacing y defined as: {self.scan_spacing[1]}')
 
-            self.sensor_center_domain[0] = self.scan_domain[0] + self.scan_spacing
-            self.sensor_center_domain[1] = self.scan_domain[1] - self.scan_spacing
+            self.sensor_center_domain[0] = self.scan_domain[0] + self.scan_spacing * 0.5
+            self.sensor_center_domain[1] = self.scan_domain[1] - self.scan_spacing * 0.5
 
         else:
             raise TypeError('Specify a valid option to generate the measurement mesh geometry')
