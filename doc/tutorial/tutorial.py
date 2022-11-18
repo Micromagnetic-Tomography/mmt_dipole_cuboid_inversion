@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -31,14 +31,20 @@ import mmt_dipole_cuboid_inversion as dci
 
 # ## Using the Dipole class
 
-# We first specify the location of the QDM scan data and the tomographic data with both the positions and dimensions of the cuboids. We define the scan surface area using the centers of the lower left and upper right sensors of the surface. For this we use the `QDM_sensor_domain` parameter.
+# We first specify the location of the QDM scan data and the tomographic data with both the positions and dimensions of the cuboids. We define the scan surface area using the centers of the lower left and upper right sensors of the surface. For this we use the `QDM_sensor_domain` parameter. 
+#
+# For the cuboid data, we will use a Numpy array instead of the raw text file, in order to modify the `z`-positions of the cuboids. The raw file is defined with the `z`-axis downwards (towards sample depth), but we will use the system with the axis pointing upwards. In the case we want to use the raw text file, we can define the `scan_height` variable as negative, i.e. `z=-6e-6` and the inversion will be made with a left-handed coordinate system, where `z` is oriented towards depth.
 
 # +
 data_path = Path('../../chest/tutorial_qdm_data/')
 
 # location and name of QDM and cuboid file
 QDMfile = data_path / 'class_QDM_result2.txt'
+
+# load cuboid data and redefine z-locations
 cuboidfile = data_path / 'class_cuboid_result2.txt'
+cuboiddata = np.loadtxt(cuboidfile, skiprows=0)
+cuboiddata[:, 2] *= -1.0
 
 # size of QDM domain
 QDM_sensor_domain = np.array([[300, 1250], [450, 1400]]) * 1e-6
@@ -58,22 +64,23 @@ scan_height = 6e-6
 
 # Now we can instantiate the class using the parameters defined previously. The first parameter in this class contains the locations of the sensor surface corners, however, here we will only use the positions of the sensors. Hence, we set the first parameter as `None`.
 
-mag_svd = dci.DipoleCuboidInversion(None, QDM_sensor_domain, QDM_spacing, QDM_deltax, QDM_deltay, 
-                       QDM_area, scan_height)
+mag_svd = dci.DipoleCuboidInversion(
+            None, QDM_sensor_domain, QDM_spacing, QDM_deltax, QDM_deltay, 
+            QDM_area, scan_height)
 
 # Alternatively, we can load the scan surface parameters from a `json` file, which can be useful if we want to keep a record of the inversion parameters. Let's take a look at the `json` file for this tutorial first:
 
 # !cat ../../chest/tutorial_qdm_data/tutorial_scan_params.json
 
-# We can now use this configuration file to load our class:
+# We can now use this configuration file to instatiate our class in a different way:
 
 mag_svd = dci.DipoleCuboidInversion.from_json(data_path / 'tutorial_scan_params.json')
 
-# Now we can read the cubooid and QDM files:
+# Now we can read the cuboid data (Numpy array) and the QDM file:
 
-mag_svd.read_files(QDMfile, cuboidfile, cuboid_scaling_factor=1e-6)
+mag_svd.read_files(QDMfile, cuboiddata, cuboid_scaling_factor=1e-6)
 
-# And define the scan surface using two sensor locations:
+# and define the scan surface using two sensor locations:
 
 mag_svd.set_scan_domain(gen_sd_mesh_from='sensor_center_domain')
 
@@ -81,20 +88,12 @@ mag_svd.set_scan_domain(gen_sd_mesh_from='sensor_center_domain')
 
 print(mag_svd.scan_domain * 1e6)
 
-mag_svd.
-
-# + tags=[]
-mag_svd.prepare_matrix(method='numba')
-# -
-
-mag_svd.Forward_G
-
 # ## Inversion
 
 # To compute the magnetization we can use the shortcut fuction `obtain_magnetization` which calls three internal methods in the class. To populate the matrix we choose to use the `cython` method which fills the forward matrix `G` in parallel (much faster). The method to perform the numerical inversion can also be specified, in this case we use `pinv2` from Scipy which uses a Singular Value Decomposition for the pseudo-inverse:
 
 # + tags=[]
-mag_svd.obtain_magnetization(QDMfile, cuboidfile, cuboid_scaling_factor=1e-6,
+mag_svd.obtain_magnetization(QDMfile, cuboiddata, cuboid_scaling_factor=1e-6,
                              method_populate='cython', method_inverse='scipy_pinv',
                              rtol=1e-30)
 
@@ -110,15 +109,27 @@ mag_svd.Forward_G
 
 # ## Results
 
-# We can directly plot the original scan data but in the next section we will use the more powerful plot tools from this library
+# We can directly plot the original scan data but in the next section we will use the more powerful plot tools from this library.
+#
+# We start cehcking the limits of the magnetic data and restrict the colormap of the result to a suitable range of values. We scale the data by the sensor area to obtain the average flux magnitude within each sensor.
 
-plt.imshow(mag_svd.scan_matrix, origin='lower', cmap='magma')
+print(np.max(np.abs(mag_svd.scan_matrix / QDM_area)))
+
+# We can now use a magnitude of, for instance, `200e-6`
+
+vlim = 200e-6
+
+f, ax = plt.subplots()
+ax.imshow(mag_svd.scan_matrix / QDM_area, origin='lower', cmap='magma',
+          vmin=-vlim, vmax=vlim)
 plt.show()
 
 # This is the field but inverted, we will plot this in the next section using the correct limits
 
-plt.imshow((mag_svd.Forward_G @ mag_svd.Mag).reshape(mag_svd.Ny, -1),
-           origin='lower', cmap='magma')
+f, ax = plt.subplots()
+ax.imshow((mag_svd.Forward_G @ mag_svd.Mag).reshape(mag_svd.Ny, -1) / QDM_area,
+          vmin=-vlim, vmax=vlim,
+          origin='lower', cmap='magma')
 plt.show()
 
 # ## Plots
@@ -127,7 +138,7 @@ plt.show()
 # The `mmt_dipole_inverse` library includes a powerful and modular way of generating plots from the inversion results and the cuboid/grain information.
 # -
 
-from mmt_dipole_inverse.tools import plot as dpi_pt
+from mmt_dipole_cuboid_inversion.tools import plot as dpi_pt
 
 # We first generate the corresponding arrays in the instance of the Dipole class, in this case we called it `mag_svd`. The `set_grain geometries` will create these arrays with information about the grain position and their dimensions. An useful argument is to scale the space by a factor, in this case we will set everything in micrometre units:
 

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -75,7 +75,12 @@ scan_height = 2e-6
 mag_inv = dci.DipoleCuboidInversion(None, SQUID_sensor_domain, SQUID_spacing,
         SQUID_deltax, SQUID_deltay, SQUID_area, scan_height)
 
-mag_inv.read_files(ScanFile, CuboidFile, cuboid_scaling_factor=1e-6)
+# +
+CuboidData = np.loadtxt(CuboidFile, skiprows=0)
+CuboidData[:, 2] *= -1.0
+
+mag_inv.read_files(ScanFile, CuboidData, cuboid_scaling_factor=1e-6)
+# -
 
 # Generate the scan surface using the sensor centers:
 
@@ -105,23 +110,23 @@ for m, mag in enumerate(MagNorms):
 
 # Define first the geometries into our `mag_inv` class instance. All the spatial locations of the plots will be scaled by a factor of 1µm:
 
-dpinv_tools.plot.set_grain_geometries(mag_inv, spatial_scaling=1e6)
+dcit.plot.set_grain_geometries(mag_inv, spatial_scaling=1e6)
 
 # We can now plot the grain profiles and forward/inversion fields. Note that we scale the fields by the `scan_area` to have the flux in Tesla rather than Tesla.m^2:
 
 f, ax = plt.subplots(figsize=(10, 10 * 200 / 350))
-dpinv_tools.plot.plot_grain_boundaries(mag_inv, ax)
-im = dpinv_tools.plot.plot_inversion_field(mag_inv, ax, 
-                                           scale_field=1/mag_inv.scan_area)
+dcit.plot.plot_grain_boundaries(mag_inv, ax)
+im = dcit.plot.plot_inversion_field(mag_inv, ax,
+                                    scale_field=1/mag_inv.scan_area)
 plt.colorbar(im)
 ax.set_title('Inverted field')
 plt.show()
 
 f, ax = plt.subplots(figsize=(10, 10 * 200 / 350))
-dpinv_tools.plot.plot_grain_boundaries(mag_inv, ax)
-im = dpinv_tools.plot.plot_scan_field(mag_inv, ax)
+dcit.plot.plot_grain_boundaries(mag_inv, ax)
+im = dcit.plot.plot_scan_field(mag_inv, ax, scale_field=1/mag_inv.scan_area)
 plt.colorbar(im)
-ax.set_title('Inverted field')
+ax.set_title('Scan field')
 plt.show()
 
 # ### 3D visualization of grains
@@ -146,13 +151,12 @@ cmap = plt.get_cmap('Paired', 10)
 # Define a light source although is not strictly necessary
 ls = LightSource(azdeg=90, altdeg=10)
 # Here we obtain the Matplotlib collection to be plotted in our 3D system
-col = dpinv_tools.plot.plotCubeAt(cuboid_data[:, :3],
-                                  2 * cuboid_data[:, 3:6],
-                                  edgecolor="k", linewidth=.2,
-                                  colors=cmap(cuboid_indexes),
-                                  # lightsource=True
-                                  lightsource=ls
-                                  )
+col = dcit.plot.plotCubeAt(cuboid_data[:, :3], 2 * cuboid_data[:, 3:6],
+                           edgecolor="k", linewidth=.2,
+                           colors=cmap(cuboid_indexes),
+                           # lightsource=True
+                           lightsource=ls
+                           )
 # We finally add it to the plot as a collection
 ax.add_collection3d(col)
 
