@@ -25,12 +25,12 @@ include = [
 
 [tool.poetry.build]
 generate-setup-file = false
-script = "build.py"
+script = "build_extension.py"
 
 [tool.poetry.dependencies]
 cython = ">=0.29.26"
 python = ">=3.8,<3.11"
-numpy = ">=1.21,<1.23"
+numpy = ">=1.23"
 numba = ">=0.55.2"
 scipy = ">=1.7"
 descartes = ">=1.0"
