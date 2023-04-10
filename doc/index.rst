@@ -3,22 +3,27 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-MMT Dipole Cuboid Inversion - Cuboid model numerical inversion
-==============================================================
+MMT Dipole Cuboid Inversion - Homogeneously Magnetized Particle model
+=====================================================================
 
 .. image:: ./_static/area1_grains_scan_sample.jpg
 
 |
 
-This is the documentation for the `dipole_cuboid_inversion` library. This
+This is the documentation for the `mmt_dipole_cuboid_inversion` library. This
 Python module performs numerical inversions from magnetometry or microscopy
-scan data into grains modelled as cuboids. Grain geometries and locations are
+scan data into grains modelled as aggregations cuboids. The particles are
+assumed as homogeneously magnetized. Grain geometries and locations are
 obtained from micro or nano X-ray computed tomography. The main class of this
-library is the `Dipole` class that accepts the measurement data and has the
-necessary methods to obtain inverted magnetizations.
+library is the `DipoleCuboidInversion` class that accepts the measurement data
+and has the necessary methods to obtain inverted magnetizations.
+
+----
 
 .. autoclass:: mmt_dipole_cuboid_inversion.DipoleCuboidInversion
    :noindex:
+
+----
    
 The `scan_data` and `cuboid_data` parameters are passed as text files. The data
 from the scan measurement is formatted as a :math:`NxN` matrix where every
@@ -46,8 +51,9 @@ belongs.
 An introductory tutorial is provided in the :doc:`tutorial/tutorial` section
 and more complex functionality can be found in the other notebooks
 
-Detailed documentation of every method in the `Dipole` class and functions to
-plot the data analyzed with this library can be found in the API section.
+Detailed documentation of every method in the `DipoleCuboidInversion` class,
+and functions to plot the data analyzed with this library, can be found in the
+API section.
 
 .. toctree::
    :maxdepth: 2
