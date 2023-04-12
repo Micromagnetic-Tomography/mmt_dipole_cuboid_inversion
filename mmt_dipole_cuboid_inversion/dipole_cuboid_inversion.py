@@ -236,6 +236,7 @@ class DipoleCuboidInversion(object):
         cuboids_reader_kwargs
             Extra arguments to the reader of cuboid files, e.g. `skiprows=2`
         """
+        __read_files_flag = True
 
         if isinstance(scan_data, (np.ndarray)):
             self.scan_matrix = np.copy(scan_data)
@@ -305,6 +306,8 @@ class DipoleCuboidInversion(object):
             Tolerance for checking `scan_domain` in two of the `gen_sd_mesh_from`
             methods
         """
+        __set_scan_domain_flag = True
+
         if self.scan_matrix.ndim > 1:
             self.Ny, self.Nx = self.scan_matrix.shape
         else:
@@ -475,7 +478,7 @@ class DipoleCuboidInversion(object):
                     if self.verbose:
                         print('LU decomposition of G * G^t succeeded')
                     GtScan = np.matmul(self.Forward_G.T, scan_flatten)
-                    self.Mag, INFO2 = spl.lapack.dgetrs(GtG_shuffle, IPIV, GtScan)
+                    self.Mag, INFO2 = spl.lapack.dpff.interfaces.numpy_fft.fft2getrs(GtG_shuffle, IPIV, GtScan)
                     if INFO2 != 0:
                         self.Mag = np.empty([])
                         raise RuntimeError(f'{INFO2}th argument has an illegal value. self.Mag deleted')

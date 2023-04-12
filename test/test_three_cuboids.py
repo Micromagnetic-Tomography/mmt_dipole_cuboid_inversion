@@ -19,12 +19,13 @@ dataloc = thisloc / 'test_three_cub_data/'
 
 
 def test_three_cuboids():
-    """
-    Test the inversion of 3 cuboidal particles by comparing the inverted
-    magnetizations with the magnetization from an analytical description of the
-    particles and their demag field, which is saved in `npy` format. The field
-    and particle theoretical values are located in the `test_three_cub_data/`
-    directory. The scan surface properties are specified here.
+    """Test the inversion of 3 cuboidal particles.
+
+    The tests compares the inverted magnetizations with the magnetization from
+    an analytical description of the particles and their demag field, which is
+    saved in `npy` format. The field and particle theoretical values are
+    located in the `test_three_cub_data/` directory. The scan surface
+    properties are specified here.
 
     Here we use a RHS, so z is pointing towards depth (scanning surf negative pos)
     """
