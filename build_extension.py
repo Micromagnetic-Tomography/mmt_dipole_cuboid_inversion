@@ -117,9 +117,10 @@ class custom_build_ext(build_ext):
 # If using cuda, we set a dictionary to use different arguments for nvcc
 # (see custom compiler)
 if CUDA:
-    com_args = dict(gcc=['-O3', '-fopenmp'])
+    com_args = dict(gcc=['-O3', '-fopenmp', '-openmp'])
 else:
-    com_args = ['-std=c99', '-O3', '-fopenmp']
+    # openmp for Windows
+    com_args = ['-std=c99', '-O3', '-fopenmp', '-openmp']
 
 link_args = ['-fopenmp']
 
