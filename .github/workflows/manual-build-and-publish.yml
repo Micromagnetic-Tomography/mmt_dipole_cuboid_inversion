@@ -45,9 +45,9 @@ jobs:
           dist/*.tar.gz
           dist/*.zip
 
-  pypipublish:
+  testpypipublish:
     needs: build_packages
-    name: Publish to PyPI
+    name: Publish to Test PyPI
     strategy:
       fail-fast: false
       matrix:
@@ -73,4 +73,4 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}

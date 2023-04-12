@@ -1,4 +1,4 @@
-name: Manual build and publish
+name: Manual Tests
 
 on: workflow_dispatch
 
@@ -30,7 +30,7 @@ jobs:
 
     - name: Install dependencies
       shell: bash
-      run: python -m poetry install --with-dev
+      run: python -m poetry install --with dev
 
     - name: Run tests
       run: |
