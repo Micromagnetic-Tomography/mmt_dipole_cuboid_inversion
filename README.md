@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7823450.svg)](https://doi.org/10.5281/zenodo.7823450)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Documentation Status](https://readthedocs.org/projects/mmt-dipole-cuboid-inversion/badge/?version=latest)](https://mmt-dipole-cuboid-inversion.readthedocs.io/en/latest/?badge=latest)
 
