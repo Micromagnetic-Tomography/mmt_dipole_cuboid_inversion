@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'MMT Dipole Cuboid Inversion'
-copyright = '2021, Frenk Out, David Cortés-Ortuño, Martha Kosters, Karl Fabian, Lennart V. de Groot'
+copyright = '2023, Frenk Out, David Cortés-Ortuño, Martha Kosters, Karl Fabian, Lennart V. de Groot'
 author = 'Frenk Out, David Cortés-Ortuño, Martha Kosters, Karl Fabian, Lennart V. de Groot'
 
 

@@ -1,7 +1,10 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Documentation Status](https://readthedocs.org/projects/mmt-dipole-cuboid-inversion/badge/?version=latest)](https://mmt-dipole-cuboid-inversion.readthedocs.io/en/latest/?badge=latest)
 
 # MMT Numerical Libraries: Dipole Cuboid Inversion
+
+![](doc/_static/area1_grains_scan_sample.jpg)
 
 Python library for the calculation of magnetizations of magnetic grain sources,
 which are modelled as homogeneously magnetized particles, using an aggregation
