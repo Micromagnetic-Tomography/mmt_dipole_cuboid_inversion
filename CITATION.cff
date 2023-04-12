@@ -1,0 +1,38 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: mmt_dipole_cuboid_inversion
+message: >-
+  If you use this software, please cite it using the metadata from this file.
+type: software
+authors:
+  - given-names: Frenk
+    family-names: Out
+    email: f.out@uu.nl
+  - given-names: David
+    family-names: Cortés-Ortuño
+    email: david.cortes@usm.cl
+  - given-names: Martha
+    family-names: Kosters
+    email: m.e.kosters@uu.nl
+  - given-names: Karl
+    family-names: Fabian
+  - given-names: Lennart V.
+    family-names: de Groot
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.7823450
+    description: Full project DOI
+repository-code: >-
+  https://github.com/Micromagnetic-Tomography/mmt_dipole_cuboid_inversion
+abstract: >-
+  Python library for the calculation of magnetizations of magnetic grain
+  sources, which are modelled as homogeneously magnetized particles, using an
+  aggregation of cuboids. The method requires both the position of grains and
+  magnetic surface data from the Micromagnetic Tomography project.
+keywords:
+  - micromagnetic tomography
+  - potential theory
+  - inversion
+license: MIT
