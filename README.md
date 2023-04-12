@@ -45,6 +45,9 @@ Or you can use Poetry (recommended for development and CUDA, see below)
 ```console
 poetry install
 ```
+# Documentation
+
+Please visit the official ![Documentation](https://mmt-dipole-cuboid-inversion.readthedocs.io/en/latest/?badge=latest)
 
 ## CUDA
 
@@ -82,14 +85,16 @@ be installed via `pip`, you can run
 poetry build
 ```
 
-that will produce a `dist` folder containing a `tar.gz` file and a `wheel`
+This will produce a `dist` folder containing a `tar.gz` file and a `wheel`
 file. These files can be installed via `pip`. 
 
-### Test
+## PyPI
 
-After committing changes please run the test `test/test_single_dipole.py` using
-`pytest` to check your changes. More tests are required to make the code more
-robust.
+Install from PyPI. Only Linux and Windows builds are currently available.
+
+```console
+pip install mmt-dipole-cuboid-inversion
+```
 
 ## How to use
 

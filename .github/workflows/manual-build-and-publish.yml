@@ -47,7 +47,7 @@ jobs:
 
   testpypipublish:
     needs: build_packages
-    name: Publish to Test PyPI
+    name: Publish to PyPI
     strategy:
       fail-fast: false
       matrix:
@@ -69,9 +69,8 @@ jobs:
         mv poetry-dist-objects-windows-latest/*.whl dist/
         mv poetry-dist-objects-ubuntu-latest/* dist/
 
-    - name: Publish package to Test PyPI
+    - name: Publish package to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
-        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        repository-url: https://test.pypi.org/legacy/
+        password: ${{ secrets.PYPI_API_TOKEN }}

@@ -2,7 +2,8 @@ Installation
 ============
 
 The `mmt_dipole_cuboid_inversion` library can be installed directly via PyPI
-using `pip` (notice PyPI changed `_` to `-`)
+using `pip` (notice PyPI changed `_` to `-`). Only Linux and Windows builds are
+currently available.
 
 .. code-block:: sh
 
