@@ -3,10 +3,10 @@
 
 # MMT Numerical Libraries: Dipole Cuboid Inversion
 
-Python library for the calculation of magnetizations from magnetic grain
-sources modelled as uniformly magnetized, i.e. dipole-like, cuboids. The method
-requires both the position of grains and magnetic surface data from the
-Micromagnetic Tomography project. This is achieved by:
+Python library for the calculation of magnetizations of magnetic grain sources,
+which are modelled as homogeneously magnetized particles, using an aggregation
+of cuboids. The method requires both the position of grains and magnetic
+surface data from the Micromagnetic Tomography project. This is achieved by:
 
 - Modelling the grains as aggregation of cuboids. This data is input into this
   library's main class called `DipoleCuboidInversion`.
@@ -103,17 +103,18 @@ An Example notebook file with example data is included.
 
 # Cite
 
-If you find this library useful please cite us (you might need LaTeX's
-`url` package)
+If you find this library useful please cite us (you might need LaTeX's `url`
+package). Check Github's Citation in the About menu, or the following Bibtex
+entries:
 
     @Misc{Out2023,
       author       = {Out, Frenk and Cortés-Ortuño, David and Kosters, Martha and Fabian, Karl and de Groot, Lennart V.},
       title        = {{MMT Numerical Libraries: Dipole Cuboid Inversion}},
       publisher    = {Zenodo},
       note         = {Github: \url{https://github.com/Micromagnetic-Tomography/mmt_dipole_cuboid_inversion}},
-      year         = {2022},
-      doi          = {10.5281/zenodo.XXXXX},
-      url          = {https://doi.org/10.5281/zenodo.XXXXX},
+      year         = {2023},
+      doi          = {10.5281/zenodo.7823450},
+      url          = {https://doi.org/10.5281/zenodo.7823450},
     }
 
 If you have a new version of `biblatex` you can also use `@Software` instead of 
